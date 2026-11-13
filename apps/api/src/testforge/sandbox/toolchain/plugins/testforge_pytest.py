@@ -76,10 +76,21 @@ def pytest_assertrepr_compare(config: pytest.Config, op: str, left: Any, right: 
 def _failure(report: pytest.TestReport) -> dict[str, Any]:
     crash = getattr(report.longrepr, "reprcrash", None)
     message = str(crash.message) if crash is not None else str(report.longrepr)[:MAX_TEXT]
+    path = str(crash.path) if crash is not None else ""
+    line = int(crash.lineno) if crash is not None else None
+    # When the error was raised deeper (in the code under test, or the standard library),
+    # point at the line of the test itself: the last traceback entry in the test's file.
+    own = report.location[0]
+    entries = getattr(getattr(report.longrepr, "reprtraceback", None), "reprentries", []) or []
+    for entry in reversed(entries):
+        loc = getattr(entry, "reprfileloc", None)
+        if loc is not None and str(loc.path).endswith(own):
+            path, line = own, int(loc.lineno)
+            break
     failure: dict[str, Any] = {
         "message": message[:MAX_TEXT],
-        "path": str(crash.path) if crash is not None else "",
-        "line": int(crash.lineno) if crash is not None else None,
+        "path": path.removeprefix("/box/"),
+        "line": line,
         "text": str(report.longreprtext)[-MAX_TEXT:],
     }
     compare = _compares.get(report.nodeid)

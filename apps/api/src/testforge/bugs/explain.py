@@ -73,7 +73,7 @@ def explain(case: dict[str, Any], source_line: str | None = None) -> dict[str, A
     ``expression``) and its ``explanation`` in plain words."""
     failure = case.get("failure") or {}
     name = case.get("name") or case.get("nodeid") or "The test"
-    where = f"{failure.get('path') or case.get('file') or ''}"
+    where = str(failure.get("path") or case.get("file") or "").removeprefix("/box/")
     line = failure.get("line")
     location = f" at {where}:{line}" if where and line else ""
     compare = failure.get("compare") or {}
