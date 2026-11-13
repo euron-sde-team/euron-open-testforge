@@ -75,7 +75,11 @@ def test_typescript_project_runs_with_istanbul_coverage(run: Run) -> None:
     assert wrong["failure"]["compare"]["left"] == "0"
     assert wrong["failure"]["compare"]["right"] == "3"
     coverage = json.loads(result.coverage or "{}")
-    assert any(path.endswith("src/validate.ts") for path in coverage)
+    assert any(path.endswith("src/validate.ts") for path in coverage), (
+        sorted(coverage)[:20],
+        result.coverage is None,
+        result.stderr_tail[-1500:],
+    )
     assert result.coverage_tool == "istanbul"
 
 

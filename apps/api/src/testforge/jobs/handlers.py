@@ -58,6 +58,8 @@ async def _run(container: Container, session: AsyncSession, job: Job) -> None:
         result = await runs.execute(container, session, run)
     except SandboxError as exc:
         metrics.SANDBOX_FAILURES.labels(exc.reason).inc()
+        # One line per failure: CloudWatch counts these (the SandboxFailures alarm).
+        log.warning("sandbox failure", extra={"reason": exc.reason, "run": str(run.id)})
         if exc.retryable:
             run.status = "queued"
             await session.commit()
@@ -68,6 +70,7 @@ async def _run(container: Container, session: AsyncSession, job: Job) -> None:
         return
     if result.error:
         metrics.SANDBOX_FAILURES.labels("launch").inc()
+        log.warning("sandbox failure", extra={"reason": "launch", "run": str(run.id)})
     await runs.record(container, session, run, result)
 
 
