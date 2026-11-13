@@ -1,0 +1,105 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  sanitize:
+    name: sanitization and OpenAPI drift
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: scripts/check-sanitization.sh
+      - uses: astral-sh/setup-uv@v6
+      - name: OpenAPI reference matches the app
+        working-directory: apps/api
+        run: uv sync --frozen && uv run pytest tests/unit/system/test_openapi_drift.py -q
+
+  integration:
+    name: integration tests (Postgres 16, Redis 7, Floci, mock services, the real sandbox)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    services:
+      postgres:
+        image: postgres:16.10-alpine
+        env:
+          POSTGRES_USER: testforge
+          POSTGRES_PASSWORD: testforge
+          POSTGRES_DB: testforge
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U testforge"
+          --health-interval 3s --health-timeout 3s --health-retries 30
+      redis:
+        image: redis:7.4.6-alpine
+        ports: ["6379:6379"]
+        options: --health-cmd "redis-cli ping" --health-interval 3s --health-retries 30
+      # S3, KMS and Secrets Manager for the KMS and S3 backend run.
+      floci:
+        image: floci/floci:2.3.0
+        env:
+          FLOCI_HOSTNAME: localhost
+        ports: ["4566:4566"]
+    env:
+      TEST_DATABASE_URL: postgresql+asyncpg://testforge:testforge@localhost:5432/testforge_test
+      TEST_REDIS_URL: redis://localhost:6379/15
+      TEST_SANDBOX_URL: http://127.0.0.1:5635
+      # A throwaway for this CI-only sandbox container.
+      TEST_SANDBOX_SECRET: ci-only-sandbox-secret-for-the-integration-suite
+    defaults:
+      run:
+        working-directory: apps/api
+    steps:
+      - uses: actions/checkout@v4
+      # The real sandbox image, hardened exactly as in Compose and on ECS.
+      - name: Build and start the sandbox
+        working-directory: .
+        run: |
+          docker build -f infra/docker/sandbox.Dockerfile --target sandbox -t testforge-sandbox:ci apps/api
+          docker run -d --name sandbox -p 127.0.0.1:5635:8080 \
+            -e SANDBOX_SECRET="$TEST_SANDBOX_SECRET" -e SANDBOX_CONCURRENCY=1 \
+            --cap-drop ALL --security-opt no-new-privileges \
+            --security-opt seccomp="$PWD/infra/docker/sandbox-seccomp.json" --read-only \
+            --tmpfs /tmp:exec,size=1g,uid=10001,gid=10001 --pids-limit 1024 --memory 3g \
+            testforge-sandbox:ci
+          for i in $(seq 60); do curl -sf http://127.0.0.1:5635/healthz && break; sleep 1; done
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - run: uv python install 3.12 && uv sync --frozen
+      # Default backends (local keys, local disk), with the 85% coverage floor.
+      - run: uv run pytest tests/unit tests/integration -q --cov=testforge --cov-report=term-missing:skip-covered --cov-fail-under=85
+      # The bucket, the KMS key and alias/testforge-local, exactly as `make up` does.
+      - name: Apply local-floci Terraform to the emulator
+        working-directory: .
+        run: |
+          docker run --rm --network host --add-host 000000000000.localhost:127.0.0.1 \
+            -v "$PWD/infra:/infra" -w /infra/terraform/envs/local-floci hashicorp/terraform:1.16.6 \
+            init -input=false -no-color
+          docker run --rm --network host --add-host 000000000000.localhost:127.0.0.1 \
+            -v "$PWD/infra:/infra" -w /infra/terraform/envs/local-floci hashicorp/terraform:1.16.6 \
+            apply -input=false -no-color -auto-approve -var endpoint=http://localhost:4566
+      # The same suite with AWS KMS sealing and S3 storage (make test-matrix runs all four).
+      - name: Integration tests on KMS and S3 (Floci)
+        env:
+          AWS_ACCESS_KEY_ID: test
+          AWS_SECRET_ACCESS_KEY: test
+          AWS_REGION: us-east-1
+          TEST_AWS_ENDPOINT: http://localhost:4566
+          TEST_KEY_MODE: kms
+          TEST_STORAGE: s3
+          TEST_DATABASE_URL: postgresql+asyncpg://testforge:testforge@localhost:5432/testforge_test_kms_s3
+          TEST_REDIS_URL: redis://localhost:6379/14
+        run: uv run pytest tests/integration -q -p no:warnings -rf
+      - name: Sandbox logs on failure
+        if: failure()
+        run: docker logs sandbox | tail -200

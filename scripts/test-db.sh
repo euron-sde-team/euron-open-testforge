@@ -4,6 +4,13 @@
 # (the sandbox image is built first if it is missing).
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+# Port overrides in deploy/compose/.env apply here too.
+if [[ -f "$ROOT/deploy/compose/.env" ]]; then
+  set -a
+  # shellcheck disable=SC1091
+  . "$ROOT/deploy/compose/.env"
+  set +a
+fi
 PORTS=("${TESTFORGE_PG_PORT:-5642}" "${TESTFORGE_REDIS_PORT:-5679}" "${TESTFORGE_MOCKAI_PORT:-5650}" "${TESTFORGE_SANDBOX_PORT:-5635}")
 SERVICES=(postgres redis mockai sandbox-test)
 
