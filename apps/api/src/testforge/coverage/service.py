@@ -47,7 +47,8 @@ async def store(
         fc = by_path.get(u.file)
         if fc is None:
             continue
-        pct = unit_percent(fc, u.start_line, u.end_line)
+        body = (u.details or {}).get("statement_lines") or None
+        pct = unit_percent(fc, u.start_line, u.end_line, body)
         if pct is not None:
             u.covered_percent = pct
     return cov

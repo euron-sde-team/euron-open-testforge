@@ -48,6 +48,8 @@ def test_coverage_py() -> None:
     assert pricing.as_dict()["percent"] == pytest.approx(57.14)
     assert unit_percent(pricing, 5, 7) == pytest.approx(33.33)
     assert unit_percent(pricing, 20, 30) is None
+    # The def line ran on import; the body (6, 7) never did.
+    assert unit_percent(pricing, 5, 7, [6, 7]) == 0.0
     assert unit_percent(None, 1, 2) is None
 
 

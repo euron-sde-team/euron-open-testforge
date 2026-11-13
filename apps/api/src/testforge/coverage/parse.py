@@ -140,12 +140,17 @@ def parse(tool: str, text: str) -> Coverage:
     raise CoverageError(f"unknown coverage tool {tool!r}")
 
 
-def unit_percent(fc: FileCoverage | None, start: int, end: int) -> float | None:
-    """Covered share of the statements in [start, end] of one file, or None when the file
-    was not measured or the range has no statement."""
+def unit_percent(
+    fc: FileCoverage | None, start: int, end: int, body: list[int] | None = None
+) -> float | None:
+    """Covered share of a unit's statements, or None when the file was not measured or the
+    unit has no statement the tool counts. ``body`` (the unit's own statement lines, from
+    analysis) leaves out the ``def`` or ``class`` line, which runs on import whether or not
+    any test calls the unit; without it, every statement in [start, end] counts."""
     if fc is None:
         return None
-    stmts = {n for n in fc.statements if start <= n <= end}
+    lines = set(body) if body else set(range(start, end + 1))
+    stmts = {n for n in fc.statements if start <= n <= end and n in lines}
     if not stmts:
         return None
     return round(100.0 * len(stmts & fc.covered) / len(stmts), 2)
