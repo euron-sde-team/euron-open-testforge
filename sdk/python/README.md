@@ -25,6 +25,10 @@ with TestForge() as tf:  # the API key picks the project
 
 `AsyncTestForge` has the same methods with `await`.
 
+Point `TESTFORGE_URL` at the API itself (port 5630 locally). Through the web app's origin
+(`/api` on port 5610) a request is proxied with a 120 second limit, so long `wait` values
+end early there; the API waits up to 900 seconds for a run.
+
 ## CLI
 
 ```bash
