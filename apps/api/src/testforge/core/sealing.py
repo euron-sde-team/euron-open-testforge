@@ -1,5 +1,5 @@
-"""Sealing of credentials before they are stored: source passwords, REST headers, Slack and
-webhook URLs, the AI provider key.
+"""Sealing of credentials before they are stored: model provider keys and extra headers,
+GitHub tokens, the GitHub webhook secret and outbound webhook secrets.
 
 ``local`` uses AES-256-GCM with a key derived from LOCAL_MASTER_KEY. ``kms`` calls AWS KMS
 (Floci locally) with an encryption context bound to the record, so a sealed value copied to

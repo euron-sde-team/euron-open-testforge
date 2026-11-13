@@ -90,6 +90,7 @@ class Settings(BaseSettings):
     max_file_bytes: int = Field(1_000_000, ge=1_000)
     # OpenAPI documents imported for API test generation.
     max_spec_bytes: int = Field(2_000_000, ge=10_000)
+    # Scratch space for the api, worker and scheduler (mounted writable on read-only roots).
     work_dir: str = "./.data/work"
 
     # The sandbox service. Requests are HMAC signed with SANDBOX_SECRET; the service holds
@@ -101,11 +102,13 @@ class Settings(BaseSettings):
     run_cpu_s: int = Field(60, ge=1, le=3600)
     run_wall_s: int = Field(120, ge=1, le=3600)
     run_memory_mb: int = Field(1024, ge=64, le=16384)
-    run_output_bytes: int = Field(4_000_000, ge=10_000, le=100_000_000)
+    # RLIMIT_FSIZE applies to every file a run writes, the coverage report included, so the
+    # default leaves room for a large project's coverage.json.
+    run_output_bytes: int = Field(32_000_000, ge=10_000, le=100_000_000)
     run_cpu_ceiling_s: int = Field(600, ge=1, le=7200)
     run_wall_ceiling_s: int = Field(900, ge=1, le=7200)
     run_memory_ceiling_mb: int = Field(4096, ge=64, le=65536)
-    run_output_ceiling_bytes: int = Field(32_000_000, ge=10_000, le=500_000_000)
+    run_output_ceiling_bytes: int = Field(100_000_000, ge=10_000, le=500_000_000)
     # Bytes of a workspace sent to the sandbox for one run.
     max_workspace_bytes: int = Field(40_000_000, ge=100_000)
 

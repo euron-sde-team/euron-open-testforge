@@ -1,10 +1,10 @@
 """Where a configured URL really points, judged the way the operating system resolves it.
 
-Provider base URLs and database hosts are reached from inside the deployment, so a URL
-aimed at instance metadata would hand out the task's credentials. Hosts are canonicalized
-first: glibc and macOS accept IPv4 written as one integer (2852039166), in hex
-(0xa9fea9fe), in octal (0251.0376.0251.0376) or with a trailing dot, and every one of those
-is 169.254.169.254.
+Provider base URLs, the GitHub API and webhook receivers are reached from inside the
+deployment, so a URL aimed at instance metadata would hand out the task's credentials.
+Hosts are canonicalized first: glibc and macOS accept IPv4 written as one integer
+(2852039166), in hex (0xa9fea9fe), in octal (0251.0376.0251.0376) or with a trailing dot,
+and every one of those is 169.254.169.254.
 """
 
 from __future__ import annotations

@@ -59,7 +59,7 @@ def test_kms_mode_does_not_need_a_local_master_key() -> None:
 
 def test_run_limits_are_clamped_to_the_ceilings() -> None:
     s = Settings(run_cpu_ceiling_s=100, run_memory_ceiling_mb=512)
-    assert s.clamp_limits(None, None, None, None) == (60, 120, 512, 4_000_000)
+    assert s.clamp_limits(None, None, None, None) == (60, 120, 512, 32_000_000)
     assert s.clamp_limits(5000, 30, 64, 10_000)[:3] == (100, 30, 64)
 
 

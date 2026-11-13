@@ -227,6 +227,13 @@ async def execute(container: Container, session: AsyncSession, run: TestRun) -> 
         else []
     )
     files = await sources.snapshot_files(container, imp)
+    size = sum(len(t.encode()) for t in files.values()) + sum(len(t.code.encode()) for t in tests)
+    if size > container.settings.max_workspace_bytes:
+        raise AppError(
+            f"The workspace is {size} bytes, over the {container.settings.max_workspace_bytes} "
+            "bytes a run may send to the sandbox (MAX_WORKSPACE_BYTES)",
+            code="workspace_too_large",
+        )
     # Only the generated tests run for kind "generated": the project's own suite stays out.
     targets = sorted({t.file_path for t in tests}) if run.kind == "generated" else []
     run.status = "running"

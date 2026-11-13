@@ -1,7 +1,7 @@
 """A small key-value interface with two backends: Redis, or process memory.
 
-TestForge must run with no Redis at all, so everything that would use Redis (the schema
-and result caches, rate limits) goes through :class:`KV`. With
+TestForge must run with no Redis at all, so everything that would use Redis (the file
+index cache, rate limits) goes through :class:`KV`. With
 ``REDIS_URL`` set, state is shared by every replica; without it, each process keeps its
 own, which is exact for a single replica and documented as such.
 

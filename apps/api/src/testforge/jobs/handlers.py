@@ -7,6 +7,7 @@ import logging
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from testforge.core.container import Container
+from testforge.core.errors import AppError
 from testforge.generation import service as generation
 from testforge.generation.models import Generation
 from testforge.jobs.models import Job
@@ -56,6 +57,9 @@ async def _run(container: Container, session: AsyncSession, job: Job) -> None:
         return
     try:
         result = await runs.execute(container, session, run)
+    except AppError as exc:
+        await runs.fail(session, run, exc.message)
+        return
     except SandboxError as exc:
         metrics.SANDBOX_FAILURES.labels(exc.reason).inc()
         # One line per failure: CloudWatch counts these (the SandboxFailures alarm).
