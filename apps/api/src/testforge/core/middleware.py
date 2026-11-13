@@ -156,7 +156,7 @@ class BodySizeLimitMiddleware:
                     "code": "payload_too_large",
                     "type": "invalid_request_error",
                     "message": f"The request body is larger than {limit:,} bytes. Shorten "
-                    "it, or raise MAX_BODY_BYTES (MAX_UPLOAD_BYTES for SQLite files)",
+                    "it, or raise MAX_BODY_BYTES (MAX_UPLOAD_BYTES for project ZIP uploads)",
                     "details": {"limit_bytes": limit},
                 }
             }

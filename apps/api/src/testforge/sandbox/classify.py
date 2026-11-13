@@ -1,6 +1,6 @@
 """Which limit a run crossed, decided from the sandbox's measurements.
 
-The order matters (the CodeJudge verdict order): output first, because once a write is
+The order matters (CodeJudge's classification order, reused): output first, because once a write is
 cut at RLIMIT_FSIZE a runtime may spin or fail in other ways that look like a timeout;
 then the wall clock and CPU time; then memory; then processes. A run with no limit crossed
 returns None, whatever its exit status (failing tests are not a limit).

@@ -97,7 +97,7 @@ class SessionOut(ApiModel):
 async def current_session(
     request: Request, container: ContainerDep, session: SessionDep
 ) -> SessionOut:
-    """For pages anyone may open (the problem list): a signed-out visitor is a normal
+    """For pages anyone may open (the sign-in page): a signed-out visitor is a normal
     answer here (200 with no user), not an error. ``/me`` stays strict (401) for API
     clients that require a session."""
     if not session_token(request)[0]:

@@ -128,12 +128,12 @@ def test_mock_writes_grounded_python_tests_and_one_refusable_call() -> None:
     assert "test_reserve_raises_when_quantity_is_0" in names
     assert "test_reserve_raises_when_quantity_is_11" in names  # quantity > stock, stock=10
     by_target = {u["id"]: u for u in units}
-    verdicts = []
+    outcomes = []
     for t in tests:
         unit = by_target[t.target]
         targets = {unit["name"], unit.get("class_name") or unit["name"]}
-        verdicts.append((t.name, checks.check("python", t.code, targets).ok))
-    refused = [n for n, ok in verdicts if not ok]
+        outcomes.append((t.name, checks.check("python", t.code, targets).ok))
+    refused = [n for n, ok in outcomes if not ok]
     assert refused and all(n.endswith("_runs") for n in refused)
     # Same prompt, same answer.
     assert respond(system, user) == respond(system, user)

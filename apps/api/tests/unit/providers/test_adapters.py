@@ -1,4 +1,4 @@
-"""Each provider adapter translates the normalized conversation to its wire format and back."""
+"""Each provider adapter translates the normalized messages to its wire format and back."""
 
 from __future__ import annotations
 

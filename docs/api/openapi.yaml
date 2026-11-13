@@ -60,7 +60,7 @@ paths:
       tags:
       - auth
       summary: Who is signed in, if anyone
-      description: 'For pages anyone may open (the problem list): a signed-out visitor is a normal
+      description: 'For pages anyone may open (the sign-in page): a signed-out visitor is a normal
 
         answer here (200 with no user), not an error. ``/me`` stays strict (401) for API
 

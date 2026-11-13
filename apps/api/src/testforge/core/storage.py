@@ -1,4 +1,4 @@
-"""Object storage for uploaded files, SQLite databases and pushed batches: local disk, or S3
+"""Object storage for uploaded ZIPs, source snapshots and exported reports: local disk, or S3
 (Floci locally). Rows keep only the object key. Large objects move as files, never whole
 in memory: ``put_file`` streams from disk and ``get_file`` streams to disk."""
 

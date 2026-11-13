@@ -56,7 +56,7 @@ def _reject(code: str, reason: str, tests: list[TestCheck] | None = None) -> Che
     return CheckResult(False, code, reason, tests or [])
 
 
-def _verdict(tests: list[TestCheck]) -> CheckResult:
+def _outcome(tests: list[TestCheck]) -> CheckResult:
     if not tests:
         return _reject("no_tests", "The file contains no test function")
     for t in tests:
@@ -254,7 +254,7 @@ def check_python(code: str, targets: set[str]) -> CheckResult:
                 scan.calls_target or _uses_fixture(fn, module_calls),
             )
         )
-    return _verdict(tests)
+    return _outcome(tests)
 
 
 def _uses_fixture(fn: ast.FunctionDef | ast.AsyncFunctionDef, module: _PyScan) -> bool:
@@ -437,7 +437,7 @@ def check_javascript(code: str, targets: set[str]) -> CheckResult:
                 if any(p.search(masked, a, b) for p in target_calls):
                     check.calls_target = True
         tests.append(check)
-    return _verdict(tests)
+    return _outcome(tests)
 
 
 def check(language: str, code: str, targets: set[str]) -> CheckResult:
