@@ -1,0 +1,6232 @@
+openapi: 3.1.0
+info:
+  title: Euron Open TestForge
+  description: "\nAPI of a self-hosted platform that writes and runs tests for your own code. Import a\
+    \ GitHub\nrepository or a ZIP of a Python, JavaScript or TypeScript project; TestForge analyzes it\n\
+    statically, generates unit, edge-case, negative and API tests whose assertions come from\nthe real\
+    \ code, refuses any generated test without a meaningful assertion, and runs tests in\nan unprivileged\
+    \ sandbox with no network, no credentials and a CPU, memory, output and wall\nclock budget. Failures\
+    \ are explained from the values the same run captured; coverage is\nread from coverage.py and Istanbul,\
+    \ never estimated.\n\n* People sign in with `POST /api/v1/auth/login` and send the session token as\n\
+    \  `Authorization: Bearer <token>` (the dashboard uses an HttpOnly cookie instead).\n* Applications,\
+    \ CI, the SDK and the CLI use a project API key: `Authorization: Bearer\n  tfk_...` or `X-API-Key:\
+    \ tfk_...`. Scopes: `read`, `generate`, `execute`, `manage`.\n* The usual path: `POST .../imports/github`\
+    \ (or `.../imports/zip`), `POST .../tests/generate`,\n  `PATCH .../tests/{id}` to accept, `POST .../runs`,\
+    \ then `GET .../runs/{id}`. Every long call\n  takes `?wait=<seconds>` to return when the work is\
+    \ done.\n"
+  version: 0.1.0
+paths:
+  /api/v1/auth/login:
+    post:
+      tags:
+      - auth
+      summary: Sign in to the dashboard
+      operationId: login_api_v1_auth_login_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SignInOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/auth/logout:
+    post:
+      tags:
+      - auth
+      summary: Sign out
+      description: 'Ends this session server-side too: the token is refused until it expires.'
+      operationId: logout_api_v1_auth_logout_post
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ack'
+  /api/v1/auth/session:
+    get:
+      tags:
+      - auth
+      summary: Who is signed in, if anyone
+      description: 'For pages anyone may open (the problem list): a signed-out visitor is a normal
+
+        answer here (200 with no user), not an error. ``/me`` stays strict (401) for API
+
+        clients that require a session.'
+      operationId: current_session_api_v1_auth_session_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionOut'
+  /api/v1/auth/me:
+    get:
+      tags:
+      - auth
+      summary: The signed-in user
+      operationId: me_api_v1_auth_me_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserOut'
+  /api/v1/auth/password:
+    post:
+      tags:
+      - auth
+      summary: Change your password
+      operationId: password_api_v1_auth_password_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordChange'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SignInOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/users:
+    get:
+      tags:
+      - users
+      summary: List users (to add them to projects)
+      operationId: list_users_api_v1_users_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/UserOut'
+                type: array
+                title: Response List Users Api V1 Users Get
+    post:
+      tags:
+      - users
+      summary: Create a user (admins)
+      operationId: create_user_api_v1_users_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreate'
+        required: true
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/users/{user_id}:
+    patch:
+      tags:
+      - users
+      summary: Update a user's name, role or access
+      operationId: update_user_api_v1_users__user_id__patch
+      parameters:
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: User Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserUpdate'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/instance/public:
+    get:
+      tags:
+      - instance
+      summary: Settings the sign-in page needs
+      operationId: public_settings_api_v1_instance_public_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicSettings'
+  /api/v1/instance/settings:
+    get:
+      tags:
+      - instance
+      summary: Instance settings
+      operationId: get_settings_api_v1_instance_settings_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminSettings'
+    patch:
+      tags:
+      - instance
+      summary: Change instance settings
+      operationId: update_settings_api_v1_instance_settings_patch
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SettingsUpdate'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminSettings'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/auth/signup:
+    post:
+      tags:
+      - instance
+      summary: Create an account and its organization (the first one is the admin), and sign in
+      operationId: signup_api_v1_auth_signup_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignupRequest'
+        required: true
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SignInOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/orgs:
+    get:
+      tags:
+      - organizations
+      summary: Organizations you belong to
+      operationId: list_orgs_api_v1_orgs_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/OrgOut'
+                type: array
+                title: Response List Orgs Api V1 Orgs Get
+    post:
+      tags:
+      - organizations
+      summary: Create an organization you own
+      operationId: create_org_api_v1_orgs_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrgCreate'
+        required: true
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrgOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/orgs/{org_id}:
+    get:
+      tags:
+      - organizations
+      summary: An organization
+      operationId: get_org_api_v1_orgs__org_id__get
+      parameters:
+      - name: org_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Org Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrgOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    patch:
+      tags:
+      - organizations
+      summary: Rename an organization (admins)
+      operationId: update_org_api_v1_orgs__org_id__patch
+      parameters:
+      - name: org_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Org Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrgUpdate'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrgOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/orgs/{org_id}/members:
+    get:
+      tags:
+      - organizations
+      summary: People in an organization
+      operationId: list_members_api_v1_orgs__org_id__members_get
+      parameters:
+      - name: org_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Org Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OrgMemberOut'
+                title: Response List Members Api V1 Orgs  Org Id  Members Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    post:
+      tags:
+      - organizations
+      summary: Add a person (creating their account if needed; admins)
+      operationId: add_member_api_v1_orgs__org_id__members_post
+      parameters:
+      - name: org_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Org Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrgMemberAdd'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrgMemberOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/orgs/{org_id}/members/{user_id}:
+    patch:
+      tags:
+      - organizations
+      summary: Change a person's role (admins)
+      operationId: update_member_api_v1_orgs__org_id__members__user_id__patch
+      parameters:
+      - name: org_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Org Id
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: User Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrgMemberUpdate'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrgMemberOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    delete:
+      tags:
+      - organizations
+      summary: Remove a person (admins)
+      operationId: remove_member_api_v1_orgs__org_id__members__user_id__delete
+      parameters:
+      - name: org_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Org Id
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: User Id
+      responses:
+        '204':
+          description: Successful Response
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/projects:
+    get:
+      tags:
+      - projects
+      summary: Projects you can see
+      operationId: list_projects_api_v1_projects_get
+      parameters:
+      - name: org_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Org Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProjectOut'
+                title: Response List Projects Api V1 Projects Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    post:
+      tags:
+      - projects
+      summary: Create a project in an organization (admins; you become its admin)
+      operationId: create_project_api_v1_projects_post
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectCreate'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/projects/current:
+    get:
+      tags:
+      - projects
+      summary: The project of the API key in use (or of the X-Project-Id header)
+      description: Lets the SDK and the CLI find their project from the key alone.
+      operationId: current_project_api_v1_projects_current_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectOut'
+  /api/v1/projects/{project_id}:
+    get:
+      tags:
+      - projects
+      summary: One project
+      operationId: get_project_api_v1_projects__project_id__get
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          description: The project
+          title: Project Id
+        description: The project
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    patch:
+      tags:
+      - projects
+      summary: Change a project's settings
+      operationId: update_project_api_v1_projects__project_id__patch
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          description: The project
+          title: Project Id
+        description: The project
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectUpdate'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    delete:
+      tags:
+      - projects
+      summary: Delete a project and everything in it
+      operationId: delete_project_api_v1_projects__project_id__delete
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          description: The project
+          title: Project Id
+        description: The project
+      responses:
+        '204':
+          description: Successful Response
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/projects/{project_id}/members:
+    get:
+      tags:
+      - projects
+      summary: Project members
+      operationId: list_members_api_v1_projects__project_id__members_get
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          description: The project
+          title: Project Id
+        description: The project
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MemberOut'
+                title: Response List Members Api V1 Projects  Project Id  Members Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    post:
+      tags:
+      - projects
+      summary: Add a member
+      operationId: add_member_api_v1_projects__project_id__members_post
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          description: The project
+          title: Project Id
+        description: The project
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MemberAdd'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemberOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/projects/{project_id}/members/{user_id}:
+    patch:
+      tags:
+      - projects
+      summary: Change a member's role
+      operationId: update_member_api_v1_projects__project_id__members__user_id__patch
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          description: The project
+          title: Project Id
+        description: The project
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: User Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MemberUpdate'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ack'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    delete:
+      tags:
+      - projects
+      summary: Remove a member
+      operationId: remove_member_api_v1_projects__project_id__members__user_id__delete
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          description: The project
+          title: Project Id
+        description: The project
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: User Id
+      responses:
+        '204':
+          description: Successful Response
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/projects/{project_id}/api-keys:
+    get:
+      tags:
+      - projects
+      summary: API keys
+      operationId: list_keys_api_v1_projects__project_id__api_keys_get
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          description: The project
+          title: Project Id
+        description: The project
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ApiKeyOut'
+                title: Response List Keys Api V1 Projects  Project Id  Api Keys Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    post:
+      tags:
+      - projects
+      summary: Create an API key (shown once)
+      operationId: create_key_api_v1_projects__project_id__api_keys_post
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          description: The project
+          title: Project Id
+        description: The project
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApiKeyCreate'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiKeyCreated'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/projects/{project_id}/api-keys/{key_id}:
+    delete:
+      tags:
+      - projects
+      summary: Revoke an API key
+      operationId: revoke_key_api_v1_projects__project_id__api_keys__key_id__delete
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          description: The project
+          title: Project Id
+        description: The project
+      - name: key_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Key Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiKeyOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/projects/{project_id}/providers:
+    get:
+      tags:
+      - providers
+      summary: Model providers of the project
+      operationId: list_providers_api_v1_projects__project_id__providers_get
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          description: The project
+          title: Project Id
+        description: The project
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProviderOut'
+                title: Response List Providers Api V1 Projects  Project Id  Providers Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    post:
+      tags:
+      - providers
+      summary: Add a model provider with your own key (admins). The first one becomes the default
+      operationId: create_provider_api_v1_projects__project_id__providers_post
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          description: The project
+          title: Project Id
+        description: The project
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProviderCreate'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProviderOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/projects/{project_id}/providers/{provider_id}:
+    patch:
+      tags:
+      - providers
+      summary: Change a provider (admins)
+      operationId: update_provider_api_v1_projects__project_id__providers__provider_id__patch
+      parameters:
+      - name: provider_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Provider Id
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          description: The project
+          title: Project Id
+        description: The project
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProviderUpdate'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProviderOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    delete:
+      tags:
+      - providers
+      summary: Remove a provider (admins)
+      operationId: delete_provider_api_v1_projects__project_id__providers__provider_id__delete
+      parameters:
+      - name: provider_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Provider Id
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          description: The project
+          title: Project Id
+        description: The project
+      responses:
+        '204':
+          description: Successful Response
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/projects/{project_id}/providers/{provider_id}/test:
+    post:
+      tags:
+      - providers
+      summary: 'Test a provider: list its models with the stored key (admins)'
+      operationId: test_provider_api_v1_projects__project_id__providers__provider_id__test_post
+      parameters:
+      - name: provider_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Provider Id
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          description: The project
+          title: Project Id
+        description: The project
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProviderTest'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/projects/{project_id}/imports/zip:
+    post:
+      tags:
+      - imports
+      summary: Import a project from a ZIP upload (Python, JavaScript or TypeScript)
+      description: The archive is unpacked defensively (no links, no paths outside the project, size and
+        file caps) and analyzed statically; nothing in it runs until a test run, in the sandbox. Pass
+        `wait` (seconds) to return once the analysis is done.
+      operationId: import_zip_api_v1_projects__project_id__imports_zip_post
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          description: The project
+          title: Project Id
+        description: The project
+      - name: wait
+        in: query
+        required: false
+        schema:
+          type: number
+          maximum: 120.0
+          minimum: 0
+          default: 0
+          title: Wait
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Body_import_zip_api_v1_projects__project_id__imports_zip_post'
+      responses:
+        '202':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/projects/{project_id}/imports/github:
+    post:
+      tags:
+      - imports
+      summary: Import a GitHub repository at a branch, tag or commit
+      description: 'The repository arrives as GitHub''s archive of one commit: nothing is cloned and no
+        hook runs. A private repository needs the project''s GitHub token (Settings).'
+      operationId: import_github_api_v1_projects__project_id__imports_github_post
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          description: The project
+          title: Project Id
+        description: The project
+      - name: wait
+        in: query
+        required: false
+        schema:
+          type: number
+          maximum: 120.0
+          minimum: 0
+          default: 0
+          title: Wait
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GitHubImport'
+      responses:
+        '202':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/projects/{project_id}/imports:
+    get:
+      tags:
+      - imports
+      summary: Imports, newest first
+      operationId: list_imports_api_v1_projects__project_id__imports_get
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          description: The project
+          title: Project Id
+        description: The project
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ImportOut'
+                title: Response List Imports Api V1 Projects  Project Id  Imports Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/projects/{project_id}/imports/{import_id}:
+    get:
+      tags:
+      - imports
+      summary: One import and its analysis summary
+      operationId: get_import_api_v1_projects__project_id__imports__import_id__get
+      parameters:
+      - name: import_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Import Id
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          description: The project
+          title: Project Id
+        description: The project
+      - name: wait
+        in: query
+        required: false
+        schema:
+          type: number
+          maximum: 120.0
+          minimum: 0
+          default: 0
+          title: Wait
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/projects/{project_id}/imports/{import_id}/analyze:
+    post:
+      tags:
+      - imports
+      summary: Analyze an import again (after an upgrade of TestForge's analyzers)
+      operationId: reanalyze_api_v1_projects__project_id__imports__import_id__analyze_post
+      parameters:
+      - name: import_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Import Id
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          description: The project
+          title: Project Id
+        description: The project
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/projects/{project_id}/analysis:
+    get:
+      tags:
+      - imports
+      summary: 'The current source analysis: languages, frameworks, units and untested code'
+      operationId: analysis_api_v1_projects__project_id__analysis_get
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          description: The project
+          title: Project Id
+        description: The project
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalysisOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/projects/{project_id}/imports/{import_id}/units:
+    get:
+      tags:
+      - imports
+      summary: Functions, methods, classes and routes
+      operationId: list_units_api_v1_projects__project_id__imports__import_id__units_get
+      parameters:
+      - name: import_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Import Id
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          description: The project
+          title: Project Id
+        description: The project
+      - name: kind
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            pattern: ^(function|method|class|route)$
+          - type: 'null'
+          title: Kind
+      - name: untested
+        in: query
+        required: false
+        schema:
+          type: boolean
+          default: false
+          title: Untested
+      - name: file
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            maxLength: 500
+          - type: 'null'
+          title: File
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UnitOut'
+                title: Response List Units Api V1 Projects  Project Id  Imports  Import Id  Units Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/projects/{project_id}/imports/{import_id}/units/{unit_id}:
+    get:
+      tags:
+      - imports
+      summary: One code unit with its source
+      operationId: get_unit_api_v1_projects__project_id__imports__import_id__units__unit_id__get
+      parameters:
+      - name: import_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Import Id
+      - name: unit_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Unit Id
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          description: The project
+          title: Project Id
+        description: The project
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnitDetail'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/projects/{project_id}/imports/{import_id}/files:
+    get:
+      tags:
+      - imports
+      summary: Files in the snapshot
+      operationId: list_files_api_v1_projects__project_id__imports__import_id__files_get
+      parameters:
+      - name: import_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Import Id
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          description: The project
+          title: Project Id
+        description: The project
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FileOut'
+                title: Response List Files Api V1 Projects  Project Id  Imports  Import Id  Files Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/projects/{project_id}/imports/{import_id}/file:
+    get:
+      tags:
+      - imports
+      summary: One file, its units and its coverage
+      operationId: get_file_api_v1_projects__project_id__imports__import_id__file_get
+      parameters:
+      - name: import_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Import Id
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          description: The project
+          title: Project Id
+        description: The project
+      - name: path
+        in: query
+        required: true
+        schema:
+          type: string
+          maxLength: 500
+          title: Path
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileContent'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/projects/{project_id}/specs:
+    post:
+      tags:
+      - specs
+      summary: Import an OpenAPI 3 document (JSON or YAML)
+      operationId: create_spec_api_v1_projects__project_id__specs_post
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          description: The project
+          title: Project Id
+        description: The project
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SpecCreate'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpecOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    get:
+      tags:
+      - specs
+      summary: Imported OpenAPI documents
+      operationId: list_specs_api_v1_projects__project_id__specs_get
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          description: The project
+          title: Project Id
+        description: The project
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SpecOut'
+                title: Response List Specs Api V1 Projects  Project Id  Specs Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/projects/{project_id}/specs/{spec_id}:
+    get:
+      tags:
+      - specs
+      summary: One document and its operations
+      operationId: get_spec_api_v1_projects__project_id__specs__spec_id__get
+      parameters:
+      - name: spec_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Spec Id
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          description: The project
+          title: Project Id
+        description: The project
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpecOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/projects/{project_id}/pulls:
+    post:
+      tags:
+      - pull requests
+      summary: 'Import a pull request: its changed files, and its head commit analyzed'
+      description: Lists the files changed between the pull request's base and head and, once the head
+        commit is analyzed, the functions, methods and routes those changes touch. Generate tests for
+        exactly those with `POST .../tests/generate` and `pull_id`.
+      operationId: create_pull_api_v1_projects__project_id__pulls_post
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          description: The project
+          title: Project Id
+        description: The project
+      - name: wait
+        in: query
+        required: false
+        schema:
+          type: number
+          maximum: 120
+          minimum: 0
+          default: 0
+          title: Wait
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PullCreate'
+      responses:
+        '202':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PullDetail'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    get:
+      tags:
+      - pull requests
+      summary: Imported pull requests
+      operationId: list_pulls_api_v1_projects__project_id__pulls_get
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          description: The project
+          title: Project Id
+        description: The project
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PullOut'
+                title: Response List Pulls Api V1 Projects  Project Id  Pulls Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/projects/{project_id}/pulls/{pull_id}:
+    get:
+      tags:
+      - pull requests
+      summary: One pull request and its scoped units
+      operationId: get_pull_api_v1_projects__project_id__pulls__pull_id__get
+      parameters:
+      - name: pull_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Pull Id
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          description: The project
+          title: Project Id
+        description: The project
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PullDetail'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/projects/{project_id}/tests/generate:
+    post:
+      tags:
+      - tests
+      summary: Generate tests from the analyzed source (or an OpenAPI document)
+      description: 'Every generated test passes the assertion check before it is stored: one with no meaningful,
+        reachable assertion about the code under test is refused and only its name and reason are kept
+        (`rejections`). Pass `wait` (seconds) to return when it is done.'
+      operationId: generate_api_v1_projects__project_id__tests_generate_post
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          description: The project
+          title: Project Id
+        description: The project
+      - name: wait
+        in: query
+        required: false
+        schema:
+          type: number
+          maximum: 300
+          minimum: 0
+          default: 0
+          title: Wait
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateRequest'
+      responses:
+        '202':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenerationOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/projects/{project_id}/generations:
+    get:
+      tags:
+      - tests
+      summary: Generations, newest first
+      operationId: list_generations_api_v1_projects__project_id__generations_get
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          description: The project
+          title: Project Id
+        description: The project
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GenerationOut'
+                title: Response List Generations Api V1 Projects  Project Id  Generations Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/projects/{project_id}/generations/{generation_id}:
+    get:
+      tags:
+      - tests
+      summary: One generation
+      operationId: get_generation_api_v1_projects__project_id__generations__generation_id__get
+      parameters:
+      - name: generation_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Generation Id
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          description: The project
+          title: Project Id
+        description: The project
+      - name: wait
+        in: query
+        required: false
+        schema:
+          type: number
+          maximum: 300
+          minimum: 0
+          default: 0
+          title: Wait
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenerationOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/projects/{project_id}/tests:
+    get:
+      tags:
+      - tests
+      summary: Generated tests
+      operationId: list_tests_api_v1_projects__project_id__tests_get
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          description: The project
+          title: Project Id
+        description: The project
+      - name: status
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            pattern: ^(proposed|accepted|discarded)$
+          - type: 'null'
+          title: Status
+      - name: generation_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Generation Id
+      - name: unit_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Unit Id
+      - name: kind
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            pattern: ^(unit|edge|negative|api)$
+          - type: 'null'
+          title: Kind
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TestOut'
+                title: Response List Tests Api V1 Projects  Project Id  Tests Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/projects/{project_id}/tests/{test_id}:
+    get:
+      tags:
+      - tests
+      summary: 'One test: its code, assertions and description'
+      operationId: get_test_api_v1_projects__project_id__tests__test_id__get
+      parameters:
+      - name: test_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Test Id
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          description: The project
+          title: Project Id
+        description: The project
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TestDetail'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    patch:
+      tags:
+      - tests
+      summary: Accept or discard a test
+      operationId: review_test_api_v1_projects__project_id__tests__test_id__patch
+      parameters:
+      - name: test_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Test Id
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          description: The project
+          title: Project Id
+        description: The project
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TestReview'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TestOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/projects/{project_id}/tests/review:
+    post:
+      tags:
+      - tests
+      summary: Accept or discard many tests at once
+      operationId: review_many_api_v1_projects__project_id__tests_review_post
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          description: The project
+          title: Project Id
+        description: The project
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BulkReview'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BulkResult'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/projects/{project_id}/tests/{test_id}/regenerate:
+    post:
+      tags:
+      - tests
+      summary: Write this test again (the old one is discarded)
+      operationId: regenerate_api_v1_projects__project_id__tests__test_id__regenerate_post
+      parameters:
+      - name: test_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Test Id
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          description: The project
+          title: Project Id
+        description: The project
+      - name: wait
+        in: query
+        required: false
+        schema:
+          type: number
+          maximum: 300
+          minimum: 0
+          default: 0
+          title: Wait
+      responses:
+        '202':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenerationOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/projects/{project_id}/runs:
+    post:
+      tags:
+      - runs
+      summary: 'Run tests in the sandbox: generated tests, the project''s own suite, or both'
+      description: 'Every run executes in the sandbox service: no network, no credentials, and the project''s
+        CPU, memory, output and wall clock budget. A run that crosses a limit is stopped and reported
+        with the limit it crossed (`limit_exceeded`). Pass `wait` (seconds) to return when it is done.'
+      operationId: create_run_api_v1_projects__project_id__runs_post
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          description: The project
+          title: Project Id
+        description: The project
+      - name: wait
+        in: query
+        required: false
+        schema:
+          type: number
+          maximum: 900
+          minimum: 0
+          default: 0
+          title: Wait
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RunCreate'
+      responses:
+        '202':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RunDetail'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    get:
+      tags:
+      - runs
+      summary: Run history, newest first
+      operationId: list_runs_api_v1_projects__project_id__runs_get
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          description: The project
+          title: Project Id
+        description: The project
+      - name: status
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            pattern: ^(queued|running|passed|failed|error|limit_exceeded)$
+          - type: 'null'
+          title: Status
+      - name: before
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Before
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 200
+          minimum: 1
+          default: 50
+          title: Limit
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RunOut'
+                title: Response List Runs Api V1 Projects  Project Id  Runs Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/projects/{project_id}/runs/{run_id}:
+    get:
+      tags:
+      - runs
+      summary: 'One run: measurements, every test case, failures explained'
+      operationId: get_run_api_v1_projects__project_id__runs__run_id__get
+      parameters:
+      - name: run_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Run Id
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          description: The project
+          title: Project Id
+        description: The project
+      - name: wait
+        in: query
+        required: false
+        schema:
+          type: number
+          maximum: 900
+          minimum: 0
+          default: 0
+          title: Wait
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RunDetail'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/projects/{project_id}/runs/{run_id}/coverage:
+    get:
+      tags:
+      - coverage
+      summary: Coverage measured in one run
+      operationId: run_coverage_api_v1_projects__project_id__runs__run_id__coverage_get
+      parameters:
+      - name: run_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Run Id
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          description: The project
+          title: Project Id
+        description: The project
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CoverageOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/projects/{project_id}/coverage:
+    get:
+      tags:
+      - coverage
+      summary: The latest coverage and the trend over runs
+      operationId: project_coverage_api_v1_projects__project_id__coverage_get
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          description: The project
+          title: Project Id
+        description: The project
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectCoverage'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/projects/{project_id}/runs/{run_id}/failures:
+    get:
+      tags:
+      - bugs
+      summary: Every failure of a run, explained
+      operationId: failures_api_v1_projects__project_id__runs__run_id__failures_get
+      parameters:
+      - name: run_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Run Id
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          description: The project
+          title: Project Id
+        description: The project
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FailureOut'
+                title: Response Failures Api V1 Projects  Project Id  Runs  Run Id  Failures Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/projects/{project_id}/bugs/analyze:
+    post:
+      tags:
+      - bugs
+      summary: Explain one failed test from the values its run captured (no second run)
+      operationId: analyze_api_v1_projects__project_id__bugs_analyze_post
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          description: The project
+          title: Project Id
+        description: The project
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AnalyzeRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FailureOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/projects/{project_id}/reports:
+    post:
+      tags:
+      - reports
+      summary: Generate a report of a run or of the project's history
+      operationId: create_report_api_v1_projects__project_id__reports_post
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          description: The project
+          title: Project Id
+        description: The project
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReportCreate'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    get:
+      tags:
+      - reports
+      summary: Generated reports
+      operationId: list_reports_api_v1_projects__project_id__reports_get
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          description: The project
+          title: Project Id
+        description: The project
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ReportOut'
+                title: Response List Reports Api V1 Projects  Project Id  Reports Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/projects/{project_id}/reports/{report_id}/download:
+    get:
+      tags:
+      - reports
+      summary: Download a report
+      operationId: download_api_v1_projects__project_id__reports__report_id__download_get
+      parameters:
+      - name: report_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Report Id
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          description: The project
+          title: Project Id
+        description: The project
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            text/html: {}
+            text/csv: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/projects/{project_id}/webhooks:
+    get:
+      tags:
+      - webhooks
+      summary: Outbound webhooks
+      operationId: list_webhooks_api_v1_projects__project_id__webhooks_get
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          description: The project
+          title: Project Id
+        description: The project
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WebhookOut'
+                title: Response List Webhooks Api V1 Projects  Project Id  Webhooks Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    post:
+      tags:
+      - webhooks
+      summary: 'Add a webhook (admins): signed JSON on run.finished and the events you choose'
+      operationId: create_webhook_api_v1_projects__project_id__webhooks_post
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          description: The project
+          title: Project Id
+        description: The project
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WebhookCreate'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebhookCreated'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/projects/{project_id}/webhooks/{webhook_id}:
+    delete:
+      tags:
+      - webhooks
+      summary: Remove a webhook (admins)
+      operationId: delete_webhook_api_v1_projects__project_id__webhooks__webhook_id__delete
+      parameters:
+      - name: webhook_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Webhook Id
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          description: The project
+          title: Project Id
+        description: The project
+      responses:
+        '204':
+          description: Successful Response
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/projects/{project_id}/webhooks/{webhook_id}/deliveries:
+    get:
+      tags:
+      - webhooks
+      summary: Recent deliveries of a webhook
+      operationId: list_deliveries_api_v1_projects__project_id__webhooks__webhook_id__deliveries_get
+      parameters:
+      - name: webhook_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Webhook Id
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          description: The project
+          title: Project Id
+        description: The project
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DeliveryOut'
+                title: Response List Deliveries Api V1 Projects  Project Id  Webhooks  Webhook Id  Deliveries
+                  Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/projects/{project_id}/github/webhook-secret:
+    post:
+      tags:
+      - webhooks
+      summary: Create (or rotate) the secret GitHub signs pull request events with (admins)
+      operationId: rotate_github_secret_api_v1_projects__project_id__github_webhook_secret_post
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          description: The project
+          title: Project Id
+        description: The project
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GitHubSecret'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/hooks/github/{project_id}:
+    post:
+      tags:
+      - webhooks
+      - webhooks
+      summary: 'GitHub webhook: import a pull request when it is opened or updated'
+      description: Point a GitHub repository webhook (content type application/json, event `pull_request`)
+        or a GitHub Action at this URL. The body must be signed with the project's webhook secret (`X-Hub-Signature-256`);
+        anything else is refused with 401.
+      operationId: github_hook_api_v1_hooks_github__project_id__post
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Project Id
+      responses:
+        '202':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HookAck'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/projects/{project_id}/overview:
+    get:
+      tags:
+      - overview
+      summary: Tests, pass and fail, coverage trend and untested code
+      operationId: overview_api_v1_projects__project_id__overview_get
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          description: The project
+          title: Project Id
+        description: The project
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Overview'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/projects/{project_id}/usage:
+    get:
+      tags:
+      - usage
+      summary: Generations, tests, runs, sandbox time and tokens by day and model
+      operationId: usage_api_v1_projects__project_id__usage_get
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          description: The project
+          title: Project Id
+        description: The project
+      - name: days
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 366
+          minimum: 1
+          default: 30
+          title: Days
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UsageReport'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/projects/{project_id}/audit-logs:
+    get:
+      tags:
+      - audit
+      summary: The project's append-only audit log (every member)
+      description: Filter by action prefix (`run.`, `test.`, `import.`), by `target_id` (every entry about
+        one run, test or import) or by `actor_id` (one person's actions).
+      operationId: project_audit_api_v1_projects__project_id__audit_logs_get
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          description: The project
+          title: Project Id
+        description: The project
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Cursor
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 200
+          minimum: 1
+          default: 50
+          title: Limit
+      - name: action
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Action
+      - name: target_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            maxLength: 64
+          - type: 'null'
+          title: Target Id
+      - name: actor_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Actor Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Page_AuditOut_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/orgs/{org_id}/audit-logs:
+    get:
+      tags:
+      - audit
+      summary: The organization's audit log (admins)
+      operationId: org_audit_api_v1_orgs__org_id__audit_logs_get
+      parameters:
+      - name: org_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Org Id
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Cursor
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 200
+          minimum: 1
+          default: 50
+          title: Limit
+      - name: action
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Action
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Page_AuditOut_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/audit:
+    get:
+      tags:
+      - audit
+      summary: The whole instance's audit log (admins)
+      operationId: instance_audit_api_v1_audit_get
+      parameters:
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Cursor
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 200
+          minimum: 1
+          default: 50
+          title: Limit
+      - name: action
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Action
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Page_AuditOut_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /healthz:
+    get:
+      tags:
+      - system
+      summary: Liveness
+      operationId: healthz_healthz_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+                title: Response Healthz Healthz Get
+  /health:
+    get:
+      tags:
+      - system
+      summary: Liveness (alias of /healthz)
+      operationId: health_health_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+                title: Response Health Health Get
+  /readyz:
+    get:
+      tags:
+      - system
+      summary: 'Readiness: Postgres reachable (Redis reported too)'
+      operationId: readyz_readyz_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+                title: Response Readyz Readyz Get
+  /api/v1/system:
+    get:
+      tags:
+      - system
+      - system
+      summary: Deployment and queue state (instance admins)
+      operationId: system_api_v1_system_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemInfo'
+components:
+  schemas:
+    Ack:
+      properties:
+        ok:
+          type: boolean
+          title: Ok
+          default: true
+        message:
+          type: string
+          title: Message
+          default: ''
+      type: object
+      title: Ack
+    AdminSettings:
+      properties:
+        site_name:
+          type: string
+          title: Site Name
+        allow_signup:
+          type: boolean
+          title: Allow Signup
+      type: object
+      required:
+      - site_name
+      - allow_signup
+      title: AdminSettings
+    AnalysisOut:
+      properties:
+        import:
+          anyOf:
+          - $ref: '#/components/schemas/ImportOut'
+          - type: 'null'
+        units:
+          type: integer
+          title: Units
+          default: 0
+        by_kind:
+          additionalProperties:
+            type: integer
+          type: object
+          title: By Kind
+        untested:
+          type: integer
+          title: Untested
+          default: 0
+        untested_units:
+          items:
+            $ref: '#/components/schemas/UnitOut'
+          type: array
+          title: Untested Units
+      type: object
+      title: AnalysisOut
+      description: The project's current source analysis at a glance.
+    AnalyzeRequest:
+      properties:
+        run_id:
+          type: string
+          format: uuid
+          title: Run Id
+        case_id:
+          type: string
+          format: uuid
+          title: Case Id
+        use_model:
+          type: boolean
+          title: Use Model
+          default: false
+        provider_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Provider Id
+      type: object
+      required:
+      - run_id
+      - case_id
+      title: AnalyzeRequest
+    ApiKeyCreate:
+      properties:
+        name:
+          type: string
+          maxLength: 120
+          minLength: 1
+          title: Name
+        scopes:
+          items:
+            type: string
+            enum:
+            - read
+            - generate
+            - execute
+            - manage
+          type: array
+          minItems: 1
+          title: Scopes
+      type: object
+      required:
+      - name
+      title: ApiKeyCreate
+    ApiKeyCreated:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        name:
+          type: string
+          title: Name
+        prefix:
+          type: string
+          title: Prefix
+        scopes:
+          items:
+            type: string
+          type: array
+          title: Scopes
+        last_used_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Last Used At
+        revoked_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Revoked At
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        key:
+          type: string
+          title: Key
+          description: Shown once. Store it now; only a hash is kept
+      type: object
+      required:
+      - id
+      - name
+      - prefix
+      - scopes
+      - last_used_at
+      - revoked_at
+      - created_at
+      - key
+      title: ApiKeyCreated
+    ApiKeyOut:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        name:
+          type: string
+          title: Name
+        prefix:
+          type: string
+          title: Prefix
+        scopes:
+          items:
+            type: string
+          type: array
+          title: Scopes
+        last_used_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Last Used At
+        revoked_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Revoked At
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+      type: object
+      required:
+      - id
+      - name
+      - prefix
+      - scopes
+      - last_used_at
+      - revoked_at
+      - created_at
+      title: ApiKeyOut
+    AssertionOut:
+      properties:
+        test:
+          type: string
+          title: Test
+        line:
+          type: integer
+          title: Line
+        text:
+          type: string
+          title: Text
+      type: object
+      required:
+      - test
+      - line
+      - text
+      title: AssertionOut
+    AuditOut:
+      properties:
+        id:
+          type: integer
+          title: Id
+        at:
+          type: string
+          format: date-time
+          title: At
+        actor_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Actor Id
+        actor_email:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Actor Email
+        action:
+          type: string
+          title: Action
+        target_type:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Target Type
+        target_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Target Id
+        details:
+          additionalProperties: true
+          type: object
+          title: Details
+        ip:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Ip
+        org_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Org Id
+        project_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Project Id
+      type: object
+      required:
+      - id
+      - at
+      - actor_id
+      - actor_email
+      - action
+      - target_type
+      - target_id
+      - details
+      - ip
+      - org_id
+      - project_id
+      title: AuditOut
+    Body_import_zip_api_v1_projects__project_id__imports_zip_post:
+      properties:
+        file:
+          type: string
+          contentMediaType: application/octet-stream
+          title: File
+      type: object
+      required:
+      - file
+      title: Body_import_zip_api_v1_projects__project_id__imports_zip_post
+    BulkResult:
+      properties:
+        changed:
+          type: integer
+          title: Changed
+      type: object
+      required:
+      - changed
+      title: BulkResult
+    BulkReview:
+      properties:
+        ids:
+          items:
+            type: string
+            format: uuid
+          type: array
+          maxItems: 500
+          minItems: 1
+          title: Ids
+        status:
+          type: string
+          enum:
+          - accepted
+          - discarded
+          title: Status
+      type: object
+      required:
+      - ids
+      - status
+      title: BulkReview
+    CaseOut:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        generated_test_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Generated Test Id
+        nodeid:
+          type: string
+          title: Nodeid
+        file:
+          type: string
+          title: File
+        name:
+          type: string
+          title: Name
+        outcome:
+          type: string
+          enum:
+          - passed
+          - failed
+          - error
+          - skipped
+          title: Outcome
+        duration_ms:
+          type: number
+          title: Duration Ms
+        message:
+          type: string
+          title: Message
+        failure:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Failure
+      type: object
+      required:
+      - id
+      - generated_test_id
+      - nodeid
+      - file
+      - name
+      - outcome
+      - duration_ms
+      - message
+      - failure
+      title: CaseOut
+    CoverageOut:
+      properties:
+        run_id:
+          type: string
+          format: uuid
+          title: Run Id
+        import_id:
+          type: string
+          format: uuid
+          title: Import Id
+        tool:
+          type: string
+          title: Tool
+        lines_total:
+          type: integer
+          title: Lines Total
+        lines_covered:
+          type: integer
+          title: Lines Covered
+        line_percent:
+          type: number
+          title: Line Percent
+        branches_total:
+          type: integer
+          title: Branches Total
+        branches_covered:
+          type: integer
+          title: Branches Covered
+        branch_percent:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Branch Percent
+        files:
+          items:
+            additionalProperties: true
+            type: object
+          type: array
+          title: Files
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+      type: object
+      required:
+      - run_id
+      - import_id
+      - tool
+      - lines_total
+      - lines_covered
+      - line_percent
+      - branches_total
+      - branches_covered
+      - branch_percent
+      - files
+      - created_at
+      title: CoverageOut
+    DeliveryOut:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        event:
+          type: string
+          title: Event
+        status:
+          type: string
+          title: Status
+        attempts:
+          type: integer
+          title: Attempts
+        last_status_code:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Last Status Code
+        last_error:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Last Error
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        delivered_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Delivered At
+      type: object
+      required:
+      - id
+      - event
+      - status
+      - attempts
+      - last_status_code
+      - last_error
+      - created_at
+      - delivered_at
+      title: DeliveryOut
+    FailureOut:
+      properties:
+        run_id:
+          type: string
+          format: uuid
+          title: Run Id
+        case_id:
+          type: string
+          format: uuid
+          title: Case Id
+        test:
+          type: string
+          title: Test
+        outcome:
+          type: string
+          title: Outcome
+        failure:
+          additionalProperties: true
+          type: object
+          title: Failure
+        model_explanation:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Model Explanation
+      type: object
+      required:
+      - run_id
+      - case_id
+      - test
+      - outcome
+      - failure
+      title: FailureOut
+    FileContent:
+      properties:
+        path:
+          type: string
+          title: Path
+        content:
+          type: string
+          title: Content
+        language:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Language
+        units:
+          items:
+            $ref: '#/components/schemas/UnitOut'
+          type: array
+          title: Units
+        covered_lines:
+          items:
+            type: integer
+          type: array
+          title: Covered Lines
+        missing_lines:
+          items:
+            type: integer
+          type: array
+          title: Missing Lines
+      type: object
+      required:
+      - path
+      - content
+      - language
+      - units
+      title: FileContent
+    FileOut:
+      properties:
+        path:
+          type: string
+          title: Path
+        bytes:
+          type: integer
+          title: Bytes
+        language:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Language
+      type: object
+      required:
+      - path
+      - bytes
+      - language
+      title: FileOut
+    GenerateRequest:
+      properties:
+        kinds:
+          items:
+            type: string
+            enum:
+            - unit
+            - edge
+            - negative
+            - api
+          type: array
+          minItems: 1
+          title: Kinds
+        import_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Import Id
+        unit_ids:
+          anyOf:
+          - items:
+              type: string
+              format: uuid
+            type: array
+            maxItems: 500
+          - type: 'null'
+          title: Unit Ids
+        pull_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Pull Id
+        spec_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Spec Id
+        provider_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Provider Id
+        instructions:
+          type: string
+          maxLength: 2000
+          title: Instructions
+          default: ''
+      type: object
+      title: GenerateRequest
+    GenerationOut:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        status:
+          type: string
+          enum:
+          - queued
+          - running
+          - done
+          - failed
+          title: Status
+        import_id:
+          type: string
+          format: uuid
+          title: Import Id
+        kinds:
+          items:
+            type: string
+          type: array
+          title: Kinds
+        unit_ids:
+          items:
+            type: string
+          type: array
+          title: Unit Ids
+        spec_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Spec Id
+        pull_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Pull Id
+        provider_kind:
+          type: string
+          title: Provider Kind
+        model:
+          type: string
+          title: Model
+        accepted_count:
+          type: integer
+          title: Accepted Count
+        rejected_count:
+          type: integer
+          title: Rejected Count
+        rejections:
+          items:
+            $ref: '#/components/schemas/Rejection'
+          type: array
+          title: Rejections
+        operations_covered:
+          items:
+            type: string
+          type: array
+          title: Operations Covered
+        input_tokens:
+          type: integer
+          title: Input Tokens
+        output_tokens:
+          type: integer
+          title: Output Tokens
+        model_ms:
+          type: integer
+          title: Model Ms
+        error_code:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Error Code
+        error:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Error
+        actor:
+          type: string
+          title: Actor
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        finished_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Finished At
+      type: object
+      required:
+      - id
+      - status
+      - import_id
+      - kinds
+      - unit_ids
+      - spec_id
+      - pull_id
+      - provider_kind
+      - model
+      - accepted_count
+      - rejected_count
+      - rejections
+      - operations_covered
+      - input_tokens
+      - output_tokens
+      - model_ms
+      - error_code
+      - error
+      - actor
+      - created_at
+      - finished_at
+      title: GenerationOut
+    GitHubImport:
+      properties:
+        repo:
+          anyOf:
+          - type: string
+            maxLength: 300
+          - type: 'null'
+          title: Repo
+        ref:
+          anyOf:
+          - type: string
+            maxLength: 200
+            pattern: ^[A-Za-z0-9._/-]+$
+          - type: 'null'
+          title: Ref
+      type: object
+      title: GitHubImport
+    GitHubSecret:
+      properties:
+        secret:
+          type: string
+          title: Secret
+          description: Shown once. Paste it as the webhook secret in GitHub
+        url:
+          type: string
+          title: Url
+          description: The payload URL to give GitHub (or a GitHub Action)
+      type: object
+      required:
+      - secret
+      - url
+      title: GitHubSecret
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    HookAck:
+      properties:
+        accepted:
+          type: boolean
+          title: Accepted
+        message:
+          type: string
+          title: Message
+        pull_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Pull Id
+      type: object
+      required:
+      - accepted
+      - message
+      title: HookAck
+    ImportOut:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        kind:
+          type: string
+          enum:
+          - zip
+          - github
+          - pull_request
+          title: Kind
+        status:
+          type: string
+          enum:
+          - pending
+          - analyzing
+          - ready
+          - failed
+          title: Status
+        label:
+          type: string
+          title: Label
+        repo:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Repo
+        ref:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Ref
+        commit_sha:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Commit Sha
+        size_bytes:
+          type: integer
+          title: Size Bytes
+        file_count:
+          type: integer
+          title: File Count
+        languages:
+          items:
+            type: string
+          type: array
+          title: Languages
+        frameworks:
+          items:
+            type: string
+          type: array
+          title: Frameworks
+        test_frameworks:
+          items:
+            type: string
+          type: array
+          title: Test Frameworks
+        summary:
+          additionalProperties: true
+          type: object
+          title: Summary
+        error:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Error
+        analysis_ms:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Analysis Ms
+        analyzed_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Analyzed At
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+      type: object
+      required:
+      - id
+      - kind
+      - status
+      - label
+      - repo
+      - ref
+      - commit_sha
+      - size_bytes
+      - file_count
+      - languages
+      - frameworks
+      - test_frameworks
+      - summary
+      - error
+      - analysis_ms
+      - analyzed_at
+      - created_at
+      title: ImportOut
+    LoginRequest:
+      properties:
+        email:
+          type: string
+          maxLength: 320
+          pattern: ^[^@\s]+@[^@\s]+\.[^@\s]+$
+          title: Email
+        password:
+          type: string
+          maxLength: 256
+          minLength: 1
+          title: Password
+      type: object
+      required:
+      - email
+      - password
+      title: LoginRequest
+    MemberAdd:
+      properties:
+        email:
+          type: string
+          maxLength: 320
+          pattern: ^[^@\s]+@[^@\s]+\.[^@\s]+$
+          title: Email
+        role:
+          type: string
+          enum:
+          - viewer
+          - editor
+          - admin
+          title: Role
+          default: viewer
+      type: object
+      required:
+      - email
+      title: MemberAdd
+    MemberOut:
+      properties:
+        user_id:
+          type: string
+          format: uuid
+          title: User Id
+        email:
+          type: string
+          title: Email
+        name:
+          type: string
+          title: Name
+        role:
+          type: string
+          enum:
+          - viewer
+          - editor
+          - admin
+          title: Role
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+      type: object
+      required:
+      - user_id
+      - email
+      - name
+      - role
+      - created_at
+      title: MemberOut
+    MemberUpdate:
+      properties:
+        role:
+          type: string
+          enum:
+          - viewer
+          - editor
+          - admin
+          title: Role
+      type: object
+      required:
+      - role
+      title: MemberUpdate
+    OperationOut:
+      properties:
+        key:
+          type: string
+          title: Key
+        operation_id:
+          type: string
+          title: Operation Id
+        method:
+          type: string
+          title: Method
+        path:
+          type: string
+          title: Path
+        summary:
+          type: string
+          title: Summary
+        parameters:
+          items:
+            additionalProperties: true
+            type: object
+          type: array
+          title: Parameters
+        request_body:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Request Body
+        responses:
+          additionalProperties: true
+          type: object
+          title: Responses
+      type: object
+      required:
+      - key
+      - operation_id
+      - method
+      - path
+      - summary
+      - parameters
+      - request_body
+      - responses
+      title: OperationOut
+    OrgCreate:
+      properties:
+        name:
+          type: string
+          maxLength: 120
+          minLength: 1
+          title: Name
+      type: object
+      required:
+      - name
+      title: OrgCreate
+    OrgMemberAdd:
+      properties:
+        email:
+          type: string
+          maxLength: 320
+          pattern: ^[^@\s]+@[^@\s]+\.[^@\s]+$
+          title: Email
+        role:
+          type: string
+          enum:
+          - member
+          - admin
+          - owner
+          title: Role
+          default: member
+        name:
+          anyOf:
+          - type: string
+            maxLength: 200
+            minLength: 1
+          - type: 'null'
+          title: Name
+        password:
+          anyOf:
+          - type: string
+            maxLength: 256
+            minLength: 1
+          - type: 'null'
+          title: Password
+      type: object
+      required:
+      - email
+      title: OrgMemberAdd
+    OrgMemberOut:
+      properties:
+        user_id:
+          type: string
+          format: uuid
+          title: User Id
+        email:
+          type: string
+          title: Email
+        name:
+          type: string
+          title: Name
+        role:
+          type: string
+          enum:
+          - member
+          - admin
+          - owner
+          title: Role
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+      type: object
+      required:
+      - user_id
+      - email
+      - name
+      - role
+      - created_at
+      title: OrgMemberOut
+    OrgMemberUpdate:
+      properties:
+        role:
+          type: string
+          enum:
+          - member
+          - admin
+          - owner
+          title: Role
+      type: object
+      required:
+      - role
+      title: OrgMemberUpdate
+    OrgOut:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        name:
+          type: string
+          title: Name
+        slug:
+          type: string
+          title: Slug
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        role:
+          type: string
+          enum:
+          - member
+          - admin
+          - owner
+          title: Role
+          default: member
+        projects:
+          type: integer
+          title: Projects
+          default: 0
+        members:
+          type: integer
+          title: Members
+          default: 0
+      type: object
+      required:
+      - id
+      - name
+      - slug
+      - created_at
+      title: OrgOut
+    OrgUpdate:
+      properties:
+        name:
+          anyOf:
+          - type: string
+            maxLength: 120
+            minLength: 1
+          - type: 'null'
+          title: Name
+      type: object
+      title: OrgUpdate
+    Overview:
+      properties:
+        current_import:
+          anyOf:
+          - $ref: '#/components/schemas/ImportOut'
+          - type: 'null'
+        units:
+          type: integer
+          title: Units
+        untested_units:
+          type: integer
+          title: Untested Units
+        tests:
+          additionalProperties:
+            type: integer
+          type: object
+          title: Tests
+        rejected_tests:
+          type: integer
+          title: Rejected Tests
+        runs_total:
+          type: integer
+          title: Runs Total
+        runs_by_status:
+          additionalProperties:
+            type: integer
+          type: object
+          title: Runs By Status
+        pass_rate:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Pass Rate
+        latest_run:
+          anyOf:
+          - $ref: '#/components/schemas/RunOut'
+          - type: 'null'
+        recent_runs:
+          items:
+            $ref: '#/components/schemas/RunOut'
+          type: array
+          title: Recent Runs
+        coverage_percent:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Coverage Percent
+        coverage_trend:
+          items:
+            $ref: '#/components/schemas/Point'
+          type: array
+          title: Coverage Trend
+      type: object
+      required:
+      - current_import
+      - units
+      - untested_units
+      - tests
+      - rejected_tests
+      - runs_total
+      - runs_by_status
+      - pass_rate
+      - latest_run
+      - recent_runs
+      - coverage_percent
+      - coverage_trend
+      title: Overview
+    Page_AuditOut_:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/AuditOut'
+          type: array
+          title: Items
+        next_cursor:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Next Cursor
+          description: Pass as ?cursor= to fetch the next page
+      type: object
+      required:
+      - items
+      title: Page[AuditOut]
+    PasswordChange:
+      properties:
+        current_password:
+          type: string
+          maxLength: 256
+          minLength: 1
+          title: Current Password
+        new_password:
+          type: string
+          maxLength: 256
+          minLength: 10
+          title: New Password
+      type: object
+      required:
+      - current_password
+      - new_password
+      title: PasswordChange
+    Point:
+      properties:
+        run_id:
+          type: string
+          format: uuid
+          title: Run Id
+        at:
+          type: string
+          format: date-time
+          title: At
+        percent:
+          type: number
+          title: Percent
+      type: object
+      required:
+      - run_id
+      - at
+      - percent
+      title: Point
+    ProjectCoverage:
+      properties:
+        latest:
+          anyOf:
+          - $ref: '#/components/schemas/CoverageOut'
+          - type: 'null'
+        trend:
+          items:
+            $ref: '#/components/schemas/TrendPoint'
+          type: array
+          title: Trend
+      type: object
+      required:
+      - latest
+      - trend
+      title: ProjectCoverage
+    ProjectCreate:
+      properties:
+        org_id:
+          type: string
+          format: uuid
+          title: Org Id
+        name:
+          type: string
+          maxLength: 120
+          minLength: 1
+          title: Name
+        slug:
+          anyOf:
+          - type: string
+            maxLength: 64
+            pattern: ^[a-z0-9]+(-[a-z0-9]+)*$
+          - type: 'null'
+          title: Slug
+        description:
+          type: string
+          maxLength: 2000
+          title: Description
+          default: ''
+      type: object
+      required:
+      - org_id
+      - name
+      title: ProjectCreate
+    ProjectOut:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        org_id:
+          type: string
+          format: uuid
+          title: Org Id
+        name:
+          type: string
+          title: Name
+        slug:
+          type: string
+          title: Slug
+        description:
+          type: string
+          title: Description
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        role:
+          type: string
+          enum:
+          - viewer
+          - editor
+          - admin
+          title: Role
+          default: viewer
+        github_repo:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Github Repo
+        has_github_token:
+          type: boolean
+          title: Has Github Token
+          default: false
+        current_import_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Current Import Id
+        run_cpu_s:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Run Cpu S
+        run_wall_s:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Run Wall S
+        run_memory_mb:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Run Memory Mb
+        run_output_bytes:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Run Output Bytes
+        tests:
+          type: integer
+          title: Tests
+          default: 0
+        last_run_status:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Last Run Status
+        coverage_percent:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Coverage Percent
+      type: object
+      required:
+      - id
+      - org_id
+      - name
+      - slug
+      - description
+      - created_at
+      title: ProjectOut
+    ProjectUpdate:
+      properties:
+        name:
+          anyOf:
+          - type: string
+            maxLength: 120
+            minLength: 1
+          - type: 'null'
+          title: Name
+        description:
+          anyOf:
+          - type: string
+            maxLength: 2000
+          - type: 'null'
+          title: Description
+        github_repo:
+          anyOf:
+          - type: string
+            maxLength: 300
+          - type: 'null'
+          title: Github Repo
+        github_token:
+          anyOf:
+          - type: string
+            maxLength: 400
+          - type: 'null'
+          title: Github Token
+        run_cpu_s:
+          anyOf:
+          - type: integer
+            maximum: 7200.0
+            minimum: 1.0
+          - type: 'null'
+          title: Run Cpu S
+        run_wall_s:
+          anyOf:
+          - type: integer
+            maximum: 7200.0
+            minimum: 1.0
+          - type: 'null'
+          title: Run Wall S
+        run_memory_mb:
+          anyOf:
+          - type: integer
+            maximum: 65536.0
+            minimum: 64.0
+          - type: 'null'
+          title: Run Memory Mb
+        run_output_bytes:
+          anyOf:
+          - type: integer
+            maximum: 500000000.0
+            minimum: 10000.0
+          - type: 'null'
+          title: Run Output Bytes
+      type: object
+      title: ProjectUpdate
+    ProviderCreate:
+      properties:
+        name:
+          type: string
+          pattern: ^[a-z0-9][a-z0-9_-]{0,63}$
+          title: Name
+          description: Short and unique in the project, e.g. openai
+        kind:
+          type: string
+          enum:
+          - openai
+          - anthropic
+          - gemini
+          - ollama
+          - openai_compatible
+          - mock
+          title: Kind
+        model:
+          type: string
+          maxLength: 200
+          title: Model
+          description: The model to ask, e.g. gpt-4.1-mini (any for mock)
+          default: ''
+        base_url:
+          anyOf:
+          - type: string
+            maxLength: 500
+          - type: 'null'
+          title: Base Url
+        api_key:
+          anyOf:
+          - type: string
+            maxLength: 2000
+          - type: 'null'
+          title: Api Key
+        headers:
+          additionalProperties:
+            type: string
+          type: object
+          maxProperties: 20
+          title: Headers
+        timeout_s:
+          type: number
+          maximum: 1800.0
+          exclusiveMinimum: 0.0
+          title: Timeout S
+          default: 60.0
+        enabled:
+          type: boolean
+          title: Enabled
+          default: true
+        is_default:
+          type: boolean
+          title: Is Default
+          default: false
+      type: object
+      required:
+      - name
+      - kind
+      title: ProviderCreate
+    ProviderOut:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        name:
+          type: string
+          title: Name
+        kind:
+          type: string
+          enum:
+          - openai
+          - anthropic
+          - gemini
+          - ollama
+          - openai_compatible
+          - mock
+          title: Kind
+        model:
+          type: string
+          title: Model
+        base_url:
+          type: string
+          title: Base Url
+        has_api_key:
+          type: boolean
+          title: Has Api Key
+        header_names:
+          items:
+            type: string
+          type: array
+          title: Header Names
+        enabled:
+          type: boolean
+          title: Enabled
+        is_default:
+          type: boolean
+          title: Is Default
+        timeout_s:
+          type: number
+          title: Timeout S
+        last_test_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Last Test At
+        last_test_ok:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Last Test Ok
+        last_test_message:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Last Test Message
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+      type: object
+      required:
+      - id
+      - name
+      - kind
+      - model
+      - base_url
+      - has_api_key
+      - header_names
+      - enabled
+      - is_default
+      - timeout_s
+      - last_test_at
+      - last_test_ok
+      - last_test_message
+      - created_at
+      title: ProviderOut
+    ProviderTest:
+      properties:
+        ok:
+          type: boolean
+          title: Ok
+        message:
+          type: string
+          title: Message
+        latency_ms:
+          type: integer
+          title: Latency Ms
+        models:
+          items:
+            type: string
+          type: array
+          title: Models
+      type: object
+      required:
+      - ok
+      - message
+      - latency_ms
+      title: ProviderTest
+    ProviderUpdate:
+      properties:
+        model:
+          anyOf:
+          - type: string
+            maxLength: 200
+            minLength: 1
+          - type: 'null'
+          title: Model
+        base_url:
+          anyOf:
+          - type: string
+            maxLength: 500
+          - type: 'null'
+          title: Base Url
+        api_key:
+          anyOf:
+          - type: string
+            maxLength: 2000
+          - type: 'null'
+          title: Api Key
+        headers:
+          anyOf:
+          - additionalProperties:
+              type: string
+            type: object
+            maxProperties: 20
+          - type: 'null'
+          title: Headers
+        timeout_s:
+          anyOf:
+          - type: number
+            maximum: 1800.0
+            exclusiveMinimum: 0.0
+          - type: 'null'
+          title: Timeout S
+        enabled:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Enabled
+        is_default:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Is Default
+      type: object
+      title: ProviderUpdate
+    PublicSettings:
+      properties:
+        site_name:
+          type: string
+          title: Site Name
+        allow_signup:
+          type: boolean
+          title: Allow Signup
+        needs_setup:
+          type: boolean
+          title: Needs Setup
+          default: false
+      type: object
+      required:
+      - site_name
+      - allow_signup
+      title: PublicSettings
+      description: What the sign-in page needs. No secrets.
+    PullCreate:
+      properties:
+        number:
+          type: integer
+          minimum: 1.0
+          title: Number
+        repo:
+          anyOf:
+          - type: string
+            maxLength: 300
+          - type: 'null'
+          title: Repo
+      type: object
+      required:
+      - number
+      title: PullCreate
+    PullDetail:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        repo:
+          type: string
+          title: Repo
+        number:
+          type: integer
+          title: Number
+        title:
+          type: string
+          title: Title
+        author:
+          type: string
+          title: Author
+        base_ref:
+          type: string
+          title: Base Ref
+        base_sha:
+          type: string
+          title: Base Sha
+        head_ref:
+          type: string
+          title: Head Ref
+        head_sha:
+          type: string
+          title: Head Sha
+        status:
+          type: string
+          enum:
+          - pending
+          - analyzing
+          - ready
+          - failed
+          title: Status
+        import_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Import Id
+        changed_files:
+          items:
+            additionalProperties: true
+            type: object
+          type: array
+          title: Changed Files
+        scoped_unit_ids:
+          items:
+            type: string
+          type: array
+          title: Scoped Unit Ids
+        source:
+          type: string
+          title: Source
+        error:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Error
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        scoped_units:
+          items:
+            $ref: '#/components/schemas/UnitOut'
+          type: array
+          title: Scoped Units
+      type: object
+      required:
+      - id
+      - repo
+      - number
+      - title
+      - author
+      - base_ref
+      - base_sha
+      - head_ref
+      - head_sha
+      - status
+      - import_id
+      - changed_files
+      - scoped_unit_ids
+      - source
+      - error
+      - created_at
+      title: PullDetail
+    PullOut:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        repo:
+          type: string
+          title: Repo
+        number:
+          type: integer
+          title: Number
+        title:
+          type: string
+          title: Title
+        author:
+          type: string
+          title: Author
+        base_ref:
+          type: string
+          title: Base Ref
+        base_sha:
+          type: string
+          title: Base Sha
+        head_ref:
+          type: string
+          title: Head Ref
+        head_sha:
+          type: string
+          title: Head Sha
+        status:
+          type: string
+          enum:
+          - pending
+          - analyzing
+          - ready
+          - failed
+          title: Status
+        import_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Import Id
+        changed_files:
+          items:
+            additionalProperties: true
+            type: object
+          type: array
+          title: Changed Files
+        scoped_unit_ids:
+          items:
+            type: string
+          type: array
+          title: Scoped Unit Ids
+        source:
+          type: string
+          title: Source
+        error:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Error
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+      type: object
+      required:
+      - id
+      - repo
+      - number
+      - title
+      - author
+      - base_ref
+      - base_sha
+      - head_ref
+      - head_sha
+      - status
+      - import_id
+      - changed_files
+      - scoped_unit_ids
+      - source
+      - error
+      - created_at
+      title: PullOut
+    QueueInfo:
+      properties:
+        queued:
+          type: integer
+          title: Queued
+        running:
+          type: integer
+          title: Running
+        oldest_queued_s:
+          type: integer
+          title: Oldest Queued S
+      type: object
+      required:
+      - queued
+      - running
+      - oldest_queued_s
+      title: QueueInfo
+    Rejection:
+      properties:
+        name:
+          type: string
+          title: Name
+        code:
+          type: string
+          title: Code
+        reason:
+          type: string
+          title: Reason
+      type: object
+      required:
+      - name
+      - code
+      - reason
+      title: Rejection
+    ReportCreate:
+      properties:
+        scope:
+          type: string
+          enum:
+          - run
+          - project
+          title: Scope
+          default: run
+        run_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Run Id
+        format:
+          type: string
+          enum:
+          - csv
+          - html
+          title: Format
+          default: html
+      type: object
+      title: ReportCreate
+    ReportOut:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        scope:
+          type: string
+          title: Scope
+        run_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Run Id
+        format:
+          type: string
+          title: Format
+        title:
+          type: string
+          title: Title
+        size_bytes:
+          type: integer
+          title: Size Bytes
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+      type: object
+      required:
+      - id
+      - scope
+      - run_id
+      - format
+      - title
+      - size_bytes
+      - created_at
+      title: ReportOut
+    RunCreate:
+      properties:
+        kind:
+          type: string
+          enum:
+          - generated
+          - project
+          - all
+          title: Kind
+          default: generated
+        test_ids:
+          anyOf:
+          - items:
+              type: string
+              format: uuid
+            type: array
+            maxItems: 1000
+          - type: 'null'
+          title: Test Ids
+        import_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Import Id
+        language:
+          anyOf:
+          - type: string
+            enum:
+            - python
+            - javascript
+            - typescript
+          - type: 'null'
+          title: Language
+      type: object
+      title: RunCreate
+    RunDetail:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        import_id:
+          type: string
+          format: uuid
+          title: Import Id
+        kind:
+          type: string
+          enum:
+          - generated
+          - project
+          - all
+          title: Kind
+        language:
+          type: string
+          title: Language
+        framework:
+          type: string
+          title: Framework
+        status:
+          type: string
+          enum:
+          - queued
+          - running
+          - passed
+          - failed
+          - error
+          - limit_exceeded
+          title: Status
+        test_ids:
+          items:
+            type: string
+          type: array
+          title: Test Ids
+        limits:
+          additionalProperties:
+            type: integer
+          type: object
+          title: Limits
+        limit_exceeded:
+          anyOf:
+          - type: string
+            enum:
+            - cpu
+            - memory
+            - wall_clock
+            - output
+            - processes
+          - type: 'null'
+          title: Limit Exceeded
+        exit_code:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Exit Code
+        signal:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Signal
+        cpu_ms:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Cpu Ms
+        wall_ms:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Wall Ms
+        memory_kb:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Memory Kb
+        output_bytes:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Output Bytes
+        passed:
+          type: integer
+          title: Passed
+        failed:
+          type: integer
+          title: Failed
+        errors:
+          type: integer
+          title: Errors
+        skipped:
+          type: integer
+          title: Skipped
+        coverage_percent:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Coverage Percent
+        message:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Message
+        trigger:
+          type: string
+          title: Trigger
+        actor:
+          type: string
+          title: Actor
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        started_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Started At
+        finished_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Finished At
+        stdout_tail:
+          type: string
+          title: Stdout Tail
+        stderr_tail:
+          type: string
+          title: Stderr Tail
+        cases:
+          items:
+            $ref: '#/components/schemas/CaseOut'
+          type: array
+          title: Cases
+      type: object
+      required:
+      - id
+      - import_id
+      - kind
+      - language
+      - framework
+      - status
+      - test_ids
+      - limits
+      - limit_exceeded
+      - exit_code
+      - signal
+      - cpu_ms
+      - wall_ms
+      - memory_kb
+      - output_bytes
+      - passed
+      - failed
+      - errors
+      - skipped
+      - coverage_percent
+      - message
+      - trigger
+      - actor
+      - created_at
+      - started_at
+      - finished_at
+      - stdout_tail
+      - stderr_tail
+      title: RunDetail
+    RunOut:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        import_id:
+          type: string
+          format: uuid
+          title: Import Id
+        kind:
+          type: string
+          enum:
+          - generated
+          - project
+          - all
+          title: Kind
+        language:
+          type: string
+          title: Language
+        framework:
+          type: string
+          title: Framework
+        status:
+          type: string
+          enum:
+          - queued
+          - running
+          - passed
+          - failed
+          - error
+          - limit_exceeded
+          title: Status
+        test_ids:
+          items:
+            type: string
+          type: array
+          title: Test Ids
+        limits:
+          additionalProperties:
+            type: integer
+          type: object
+          title: Limits
+        limit_exceeded:
+          anyOf:
+          - type: string
+            enum:
+            - cpu
+            - memory
+            - wall_clock
+            - output
+            - processes
+          - type: 'null'
+          title: Limit Exceeded
+        exit_code:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Exit Code
+        signal:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Signal
+        cpu_ms:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Cpu Ms
+        wall_ms:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Wall Ms
+        memory_kb:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Memory Kb
+        output_bytes:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Output Bytes
+        passed:
+          type: integer
+          title: Passed
+        failed:
+          type: integer
+          title: Failed
+        errors:
+          type: integer
+          title: Errors
+        skipped:
+          type: integer
+          title: Skipped
+        coverage_percent:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Coverage Percent
+        message:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Message
+        trigger:
+          type: string
+          title: Trigger
+        actor:
+          type: string
+          title: Actor
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        started_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Started At
+        finished_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Finished At
+      type: object
+      required:
+      - id
+      - import_id
+      - kind
+      - language
+      - framework
+      - status
+      - test_ids
+      - limits
+      - limit_exceeded
+      - exit_code
+      - signal
+      - cpu_ms
+      - wall_ms
+      - memory_kb
+      - output_bytes
+      - passed
+      - failed
+      - errors
+      - skipped
+      - coverage_percent
+      - message
+      - trigger
+      - actor
+      - created_at
+      - started_at
+      - finished_at
+      title: RunOut
+    SessionOut:
+      properties:
+        user:
+          anyOf:
+          - $ref: '#/components/schemas/UserOut'
+          - type: 'null'
+      type: object
+      required:
+      - user
+      title: SessionOut
+    SettingsUpdate:
+      properties:
+        site_name:
+          anyOf:
+          - type: string
+            maxLength: 80
+            minLength: 1
+          - type: 'null'
+          title: Site Name
+        allow_signup:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Allow Signup
+      type: object
+      title: SettingsUpdate
+    SignInOut:
+      properties:
+        user:
+          $ref: '#/components/schemas/UserOut'
+        session_token:
+          type: string
+          title: Session Token
+          description: Bearer token for API clients; browsers use the cookie
+        expires_in_s:
+          type: integer
+          title: Expires In S
+      type: object
+      required:
+      - user
+      - session_token
+      - expires_in_s
+      title: SignInOut
+    SignupRequest:
+      properties:
+        email:
+          type: string
+          maxLength: 320
+          pattern: ^[^@\s]+@[^@\s]+\.[^@\s]+$
+          title: Email
+        name:
+          type: string
+          maxLength: 200
+          minLength: 1
+          title: Name
+        password:
+          type: string
+          maxLength: 256
+          minLength: 1
+          title: Password
+        organization:
+          anyOf:
+          - type: string
+            maxLength: 120
+            minLength: 1
+          - type: 'null'
+          title: Organization
+      type: object
+      required:
+      - email
+      - name
+      - password
+      title: SignupRequest
+    SpecCreate:
+      properties:
+        document:
+          type: string
+          maxLength: 5000000
+          minLength: 10
+          title: Document
+      type: object
+      required:
+      - document
+      title: SpecCreate
+    SpecOut:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        title:
+          type: string
+          title: Title
+        version:
+          type: string
+          title: Version
+        operation_count:
+          type: integer
+          title: Operation Count
+        operations:
+          items:
+            $ref: '#/components/schemas/OperationOut'
+          type: array
+          title: Operations
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+      type: object
+      required:
+      - id
+      - title
+      - version
+      - operation_count
+      - operations
+      - created_at
+      title: SpecOut
+    SystemInfo:
+      properties:
+        version:
+          type: string
+          title: Version
+        environment:
+          type: string
+          title: Environment
+        storage:
+          type: string
+          title: Storage
+        key_mode:
+          type: string
+          title: Key Mode
+        cache:
+          type: string
+          title: Cache
+        mail:
+          type: string
+          title: Mail
+        redis:
+          type: boolean
+          title: Redis
+        queue:
+          $ref: '#/components/schemas/QueueInfo'
+        organizations:
+          type: integer
+          title: Organizations
+        projects:
+          type: integer
+          title: Projects
+        users:
+          type: integer
+          title: Users
+        imports:
+          type: integer
+          title: Imports
+        generated_tests:
+          type: integer
+          title: Generated Tests
+        runs:
+          type: integer
+          title: Runs
+        sandbox:
+          type: boolean
+          title: Sandbox
+      type: object
+      required:
+      - version
+      - environment
+      - storage
+      - key_mode
+      - cache
+      - mail
+      - redis
+      - queue
+      - organizations
+      - projects
+      - users
+      - imports
+      - generated_tests
+      - runs
+      - sandbox
+      title: SystemInfo
+    TestDetail:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        generation_id:
+          type: string
+          format: uuid
+          title: Generation Id
+        import_id:
+          type: string
+          format: uuid
+          title: Import Id
+        unit_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Unit Id
+        operation:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Operation
+        kind:
+          type: string
+          enum:
+          - unit
+          - edge
+          - negative
+          - api
+          title: Kind
+        language:
+          type: string
+          title: Language
+        framework:
+          type: string
+          title: Framework
+        name:
+          type: string
+          title: Name
+        file_path:
+          type: string
+          title: File Path
+        description:
+          type: string
+          title: Description
+        assertions:
+          items:
+            $ref: '#/components/schemas/AssertionOut'
+          type: array
+          title: Assertions
+        status:
+          type: string
+          enum:
+          - proposed
+          - accepted
+          - discarded
+          title: Status
+        last_outcome:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Last Outcome
+        last_run_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Last Run Id
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        code:
+          type: string
+          title: Code
+        unit:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Unit
+      type: object
+      required:
+      - id
+      - generation_id
+      - import_id
+      - unit_id
+      - operation
+      - kind
+      - language
+      - framework
+      - name
+      - file_path
+      - description
+      - assertions
+      - status
+      - last_outcome
+      - last_run_id
+      - created_at
+      - code
+      title: TestDetail
+    TestOut:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        generation_id:
+          type: string
+          format: uuid
+          title: Generation Id
+        import_id:
+          type: string
+          format: uuid
+          title: Import Id
+        unit_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Unit Id
+        operation:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Operation
+        kind:
+          type: string
+          enum:
+          - unit
+          - edge
+          - negative
+          - api
+          title: Kind
+        language:
+          type: string
+          title: Language
+        framework:
+          type: string
+          title: Framework
+        name:
+          type: string
+          title: Name
+        file_path:
+          type: string
+          title: File Path
+        description:
+          type: string
+          title: Description
+        assertions:
+          items:
+            $ref: '#/components/schemas/AssertionOut'
+          type: array
+          title: Assertions
+        status:
+          type: string
+          enum:
+          - proposed
+          - accepted
+          - discarded
+          title: Status
+        last_outcome:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Last Outcome
+        last_run_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Last Run Id
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+      type: object
+      required:
+      - id
+      - generation_id
+      - import_id
+      - unit_id
+      - operation
+      - kind
+      - language
+      - framework
+      - name
+      - file_path
+      - description
+      - assertions
+      - status
+      - last_outcome
+      - last_run_id
+      - created_at
+      title: TestOut
+    TestReview:
+      properties:
+        status:
+          type: string
+          enum:
+          - accepted
+          - discarded
+          - proposed
+          title: Status
+      type: object
+      required:
+      - status
+      title: TestReview
+    TrendPoint:
+      properties:
+        run_id:
+          type: string
+          format: uuid
+          title: Run Id
+        line_percent:
+          type: number
+          title: Line Percent
+        branch_percent:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Branch Percent
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+      type: object
+      required:
+      - run_id
+      - line_percent
+      - branch_percent
+      - created_at
+      title: TrendPoint
+    UnitDetail:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        kind:
+          type: string
+          enum:
+          - function
+          - method
+          - class
+          - route
+          title: Kind
+        language:
+          type: string
+          title: Language
+        name:
+          type: string
+          title: Name
+        qualname:
+          type: string
+          title: Qualname
+        file:
+          type: string
+          title: File
+        module:
+          type: string
+          title: Module
+        start_line:
+          type: integer
+          title: Start Line
+        end_line:
+          type: integer
+          title: End Line
+        signature:
+          type: string
+          title: Signature
+        docstring:
+          type: string
+          title: Docstring
+        exported:
+          type: boolean
+          title: Exported
+        is_async:
+          type: boolean
+          title: Is Async
+        statement_lines:
+          type: integer
+          title: Statement Lines
+        referenced_by_tests:
+          type: boolean
+          title: Referenced By Tests
+        covered_percent:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Covered Percent
+        details:
+          additionalProperties: true
+          type: object
+          title: Details
+        source:
+          type: string
+          title: Source
+      type: object
+      required:
+      - id
+      - kind
+      - language
+      - name
+      - qualname
+      - file
+      - module
+      - start_line
+      - end_line
+      - signature
+      - docstring
+      - exported
+      - is_async
+      - statement_lines
+      - referenced_by_tests
+      - covered_percent
+      - details
+      - source
+      title: UnitDetail
+    UnitOut:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        kind:
+          type: string
+          enum:
+          - function
+          - method
+          - class
+          - route
+          title: Kind
+        language:
+          type: string
+          title: Language
+        name:
+          type: string
+          title: Name
+        qualname:
+          type: string
+          title: Qualname
+        file:
+          type: string
+          title: File
+        module:
+          type: string
+          title: Module
+        start_line:
+          type: integer
+          title: Start Line
+        end_line:
+          type: integer
+          title: End Line
+        signature:
+          type: string
+          title: Signature
+        docstring:
+          type: string
+          title: Docstring
+        exported:
+          type: boolean
+          title: Exported
+        is_async:
+          type: boolean
+          title: Is Async
+        statement_lines:
+          type: integer
+          title: Statement Lines
+        referenced_by_tests:
+          type: boolean
+          title: Referenced By Tests
+        covered_percent:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Covered Percent
+        details:
+          additionalProperties: true
+          type: object
+          title: Details
+      type: object
+      required:
+      - id
+      - kind
+      - language
+      - name
+      - qualname
+      - file
+      - module
+      - start_line
+      - end_line
+      - signature
+      - docstring
+      - exported
+      - is_async
+      - statement_lines
+      - referenced_by_tests
+      - covered_percent
+      - details
+      title: UnitOut
+    UsageByDay:
+      properties:
+        generations:
+          type: integer
+          title: Generations
+          default: 0
+        tests_accepted:
+          type: integer
+          title: Tests Accepted
+          default: 0
+        tests_rejected:
+          type: integer
+          title: Tests Rejected
+          default: 0
+        runs:
+          type: integer
+          title: Runs
+          default: 0
+        runs_failed:
+          type: integer
+          title: Runs Failed
+          default: 0
+        sandbox_ms:
+          type: integer
+          title: Sandbox Ms
+          default: 0
+        input_tokens:
+          type: integer
+          title: Input Tokens
+          default: 0
+        output_tokens:
+          type: integer
+          title: Output Tokens
+          default: 0
+        day:
+          type: string
+          format: date
+          title: Day
+      type: object
+      required:
+      - day
+      title: UsageByDay
+    UsageByModel:
+      properties:
+        generations:
+          type: integer
+          title: Generations
+          default: 0
+        tests_accepted:
+          type: integer
+          title: Tests Accepted
+          default: 0
+        tests_rejected:
+          type: integer
+          title: Tests Rejected
+          default: 0
+        runs:
+          type: integer
+          title: Runs
+          default: 0
+        runs_failed:
+          type: integer
+          title: Runs Failed
+          default: 0
+        sandbox_ms:
+          type: integer
+          title: Sandbox Ms
+          default: 0
+        input_tokens:
+          type: integer
+          title: Input Tokens
+          default: 0
+        output_tokens:
+          type: integer
+          title: Output Tokens
+          default: 0
+        model:
+          type: string
+          title: Model
+      type: object
+      required:
+      - model
+      title: UsageByModel
+    UsageCounts:
+      properties:
+        generations:
+          type: integer
+          title: Generations
+          default: 0
+        tests_accepted:
+          type: integer
+          title: Tests Accepted
+          default: 0
+        tests_rejected:
+          type: integer
+          title: Tests Rejected
+          default: 0
+        runs:
+          type: integer
+          title: Runs
+          default: 0
+        runs_failed:
+          type: integer
+          title: Runs Failed
+          default: 0
+        sandbox_ms:
+          type: integer
+          title: Sandbox Ms
+          default: 0
+        input_tokens:
+          type: integer
+          title: Input Tokens
+          default: 0
+        output_tokens:
+          type: integer
+          title: Output Tokens
+          default: 0
+      type: object
+      title: UsageCounts
+    UsageReport:
+      properties:
+        days:
+          type: integer
+          title: Days
+        totals:
+          $ref: '#/components/schemas/UsageCounts'
+        by_day:
+          items:
+            $ref: '#/components/schemas/UsageByDay'
+          type: array
+          title: By Day
+        by_model:
+          items:
+            $ref: '#/components/schemas/UsageByModel'
+          type: array
+          title: By Model
+      type: object
+      required:
+      - days
+      - totals
+      - by_day
+      - by_model
+      title: UsageReport
+    UserCreate:
+      properties:
+        email:
+          type: string
+          maxLength: 320
+          pattern: ^[^@\s]+@[^@\s]+\.[^@\s]+$
+          title: Email
+        name:
+          type: string
+          maxLength: 200
+          minLength: 1
+          title: Name
+        role:
+          type: string
+          enum:
+          - admin
+          - user
+          title: Role
+          default: user
+        password:
+          type: string
+          maxLength: 256
+          minLength: 10
+          title: Password
+      type: object
+      required:
+      - email
+      - name
+      - password
+      title: UserCreate
+    UserOut:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        email:
+          type: string
+          title: Email
+        name:
+          type: string
+          title: Name
+        role:
+          type: string
+          title: Role
+        disabled:
+          type: boolean
+          title: Disabled
+        last_login_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Last Login At
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+      type: object
+      required:
+      - id
+      - email
+      - name
+      - role
+      - disabled
+      - last_login_at
+      - created_at
+      title: UserOut
+    UserUpdate:
+      properties:
+        name:
+          anyOf:
+          - type: string
+            maxLength: 200
+            minLength: 1
+          - type: 'null'
+          title: Name
+        role:
+          anyOf:
+          - type: string
+            enum:
+            - admin
+            - user
+          - type: 'null'
+          title: Role
+        disabled:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Disabled
+      type: object
+      title: UserUpdate
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    WebhookCreate:
+      properties:
+        name:
+          type: string
+          maxLength: 120
+          minLength: 1
+          title: Name
+        url:
+          type: string
+          maxLength: 1000
+          title: Url
+        events:
+          items:
+            type: string
+            enum:
+            - run.finished
+            - generation.finished
+            - import.ready
+          type: array
+          minItems: 1
+          title: Events
+      type: object
+      required:
+      - name
+      - url
+      title: WebhookCreate
+    WebhookCreated:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        name:
+          type: string
+          title: Name
+        url:
+          type: string
+          title: Url
+        events:
+          items:
+            type: string
+          type: array
+          title: Events
+        enabled:
+          type: boolean
+          title: Enabled
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        secret:
+          type: string
+          title: Secret
+          description: Shown once. Verify X-TestForge-Signature with it
+      type: object
+      required:
+      - id
+      - name
+      - url
+      - events
+      - enabled
+      - created_at
+      - secret
+      title: WebhookCreated
+    WebhookOut:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        name:
+          type: string
+          title: Name
+        url:
+          type: string
+          title: Url
+        events:
+          items:
+            type: string
+          type: array
+          title: Events
+        enabled:
+          type: boolean
+          title: Enabled
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+      type: object
+      required:
+      - id
+      - name
+      - url
+      - events
+      - enabled
+      - created_at
+      title: WebhookOut
+servers:
+- url: http://localhost:5430
+  description: Local (make up)
