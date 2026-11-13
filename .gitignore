@@ -1,0 +1,62 @@
+# Every directory pattern below is anchored to where that output lives (a leading "/" or
+# a full path). An unanchored "coverage/" or "reports/" would also swallow this project's
+# own coverage and reports domain packages, silently, in every commit.
+
+# Dependencies and build output
+node_modules/
+/apps/web/.next/
+/apps/web/out/
+/apps/web/coverage/
+/sdk/python/dist/
+/apps/api/dist/
+.turbo/
+*.log
+.DS_Store
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+/apps/api/.coverage
+/apps/api/.coverage.*
+/apps/api/htmlcov/
+/apps/api/coverage.xml
+/apps/api/.data/
+
+# Environment: only the *.example files are ever committed
+.env
+.env.*
+!.env.example
+!**/.env.example
+!**/.env.aws.example
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+.terraform.lock.hcl
+crash.log
+backend.tf
+!backend.tf.example
+
+# Test and QA artifacts (the curated screenshots live in docs/assets)
+/e2e/test-results/
+/e2e/playwright-report/
+/e2e/.auth/
+/scripts/qa/output/
+/apps/web/test-results/
+/apps/web/playwright-report/
+
+# Local tool state
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.tsbuildinfo
+
+# Local backups (make backup)
+/backups/
