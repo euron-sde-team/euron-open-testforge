@@ -1,0 +1,13 @@
+# Build context: apps/web (BuildKit reads <Dockerfile>.dockerignore next to the Dockerfile).
+# Patterns match from the context root only, so "coverage" here never touches the
+# src/features/coverage source package.
+node_modules
+.next
+out
+coverage
+playwright-report
+test-results
+*.tsbuildinfo
+.env
+.env.*
+!.env.example

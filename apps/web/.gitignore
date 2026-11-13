@@ -1,0 +1,10 @@
+# Anchored to this app's root: an unanchored "coverage/" would also swallow the
+# src/features/coverage source package.
+/node_modules/
+/.next/
+/out/
+/next-env.d.ts
+*.tsbuildinfo
+/coverage/
+.env
+.env.local

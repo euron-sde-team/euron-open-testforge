@@ -1,0 +1,320 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * Variants the shadcn "base-nova" primitives are written against. Base UI marks
+ * state with bare data attributes (data-open, data-checked, ...).
+ */
+@custom-variant data-open {
+  &:where([data-state="open"]),
+  &:where([data-open]:not([data-open="false"])) {
+    @slot;
+  }
+}
+@custom-variant data-closed {
+  &:where([data-state="closed"]),
+  &:where([data-closed]:not([data-closed="false"])) {
+    @slot;
+  }
+}
+@custom-variant data-checked {
+  &:where([data-state="checked"]),
+  &:where([data-checked]:not([data-checked="false"])) {
+    @slot;
+  }
+}
+@custom-variant data-unchecked {
+  &:where([data-state="unchecked"]),
+  &:where([data-unchecked]:not([data-unchecked="false"])) {
+    @slot;
+  }
+}
+@custom-variant data-disabled {
+  &:where([data-disabled="true"]),
+  &:where([data-disabled]:not([data-disabled="false"])) {
+    @slot;
+  }
+}
+@custom-variant data-active {
+  &:where([data-state="active"]),
+  &:where([data-active]:not([data-active="false"])) {
+    @slot;
+  }
+}
+@custom-variant data-highlighted {
+  &:where([data-highlighted]) {
+    @slot;
+  }
+}
+
+/*
+ * TestForge design tokens. Every color in the app comes from here: components use
+ * the semantic names (primary, savings, ember, warning, danger, info, code-*, series-*),
+ * never a hex.
+ * Structure comes from fills, spacing and soft shadows; borders are hairlines
+ * reserved for inputs and table rules.
+ */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-soft: var(--primary-soft);
+  --color-secondary: var(--muted);
+  --color-secondary-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-subtle: var(--subtle);
+  --color-faint: var(--faint);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--foreground);
+  --color-destructive: var(--danger);
+  --color-border: var(--border);
+  --color-hairline: var(--hairline);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+
+  --color-savings: var(--savings);
+  --color-savings-soft: var(--savings-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-danger-foreground: var(--danger-foreground);
+  --color-code-bg: var(--code-bg);
+  --color-code-fg: var(--code-fg);
+  --color-code-muted: var(--code-muted);
+  --color-ember: var(--ember);
+  --color-ember-soft: var(--ember-soft);
+  --color-code-keyword: var(--code-keyword);
+  --color-code-string: var(--code-string);
+  --color-code-comment: var(--code-comment);
+  --color-code-number: var(--code-number);
+  --color-code-function: var(--code-function);
+  --color-code-decorator: var(--code-decorator);
+  --color-code-covered: var(--code-covered);
+  --color-code-missing: var(--code-missing);
+  --color-code-changed: var(--code-changed);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --color-neutral-soft: var(--neutral-soft);
+
+  --color-series-1: var(--series-1);
+  --color-series-2: var(--series-2);
+  --color-series-3: var(--series-3);
+  --color-series-4: var(--series-4);
+  --color-chart-grid: var(--chart-grid);
+  --color-chart-axis: var(--chart-axis);
+
+  --font-sans: var(--font-sans-stack);
+  --font-mono: var(--font-mono-stack);
+
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --radius-xl: 14px;
+  --radius-2xl: 18px;
+
+  --shadow-xs: var(--elev-1);
+  --shadow-sm: var(--elev-1);
+  --shadow-md: var(--elev-2);
+  --shadow-lg: var(--elev-3);
+  --shadow-xl: var(--elev-4);
+}
+
+:root {
+  color-scheme: light;
+  --font-sans-stack: "Inter Variable", "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono-stack: "JetBrains Mono Variable", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  /* Forge steel: warm graphite neutrals. */
+  --background: #f5f6f3;
+  --foreground: #14181a;
+  --card: #ffffff;
+  --popover: #ffffff;
+  --sidebar: #eceee9;
+  --muted: #eef0eb;
+  --accent: #e4e7e1;
+  --muted-foreground: #545d58;
+  --subtle: #737c76;
+  --faint: #a3aaa5;
+  --border: #e0e4dd;
+  --hairline: #e9ece6;
+  --input: #d4d9d1;
+  --ring: #16803c;
+
+  /* TestForge green: the accent for actions, links, focus and passing tests. */
+  --primary: #16803c;
+  --primary-foreground: #ffffff;
+  --primary-soft: #dff3e4;
+
+  --savings: #15803d;
+  --savings-soft: #e1f5e7;
+  --warning: #b45309;
+  --warning-soft: #fdf0d9;
+  --danger: #c2283c;
+  --danger-soft: #fde8eb;
+  --danger-foreground: #ffffff;
+  --info: #2563a8;
+  --info-soft: #e3eefb;
+  --neutral-soft: #e9ece6;
+  /* Forge ember: the secondary accent (the anvil spark, refused tests). */
+  --ember: #c2570c;
+  --ember-soft: #fdebdc;
+  /* Code slabs are dark in both themes. */
+  --code-bg: #101513;
+  --code-fg: #dce5df;
+  --code-muted: #8a9a91;
+  --code-keyword: #7ee2a1;
+  --code-string: #f2c879;
+  --code-comment: #6f8077;
+  --code-number: #f59e8b;
+  --code-function: #8cc8ff;
+  --code-decorator: #d7a6ff;
+  --code-covered: rgba(74, 222, 128, 0.12);
+  --code-missing: rgba(248, 113, 113, 0.16);
+  --code-changed: rgba(250, 204, 21, 0.13);
+
+  /* Chart series in fixed order (checked for colorblind separation). */
+  --series-1: #1f9d55;
+  --series-2: #e07b2e;
+  --series-3: #4f6bed;
+  --series-4: #d6336c;
+  --chart-grid: #e7eae4;
+  --chart-axis: #858e88;
+
+  /* The sign-in brand panel is dark in both themes. */
+  --panel: #0b130e;
+  --panel-glow: rgba(34, 160, 84, 0.4);
+  --panel-glow-2: rgba(234, 120, 40, 0.18);
+  --panel-accent: #86efac;
+  --panel-accent-soft: rgba(34, 160, 84, 0.2);
+  --panel-ok: #86efac;
+  --panel-ok-soft: rgba(74, 222, 128, 0.14);
+  --panel-live: #fdba74;
+  --panel-live-soft: rgba(251, 146, 60, 0.16);
+  --panel-wait: #fcd34d;
+  --panel-wait-soft: rgba(251, 191, 36, 0.14);
+
+  --elev-1: 0 1px 2px rgba(18, 26, 20, 0.05);
+  --elev-2: 0 1px 2px rgba(18, 26, 20, 0.04), 0 2px 8px rgba(18, 26, 20, 0.05);
+  --elev-3: 0 2px 4px rgba(18, 26, 20, 0.05), 0 8px 24px rgba(18, 26, 20, 0.08);
+  --elev-4: 0 4px 12px rgba(18, 26, 20, 0.08), 0 16px 40px rgba(18, 26, 20, 0.12);
+}
+
+.dark {
+  color-scheme: dark;
+  --background: #0b0e0c;
+  --foreground: #e6ece8;
+  --card: #131815;
+  --popover: #18201b;
+  --sidebar: #0e1210;
+  --muted: #18201b;
+  --accent: #212a24;
+  --muted-foreground: #9aa8a0;
+  --subtle: #7d8b83;
+  --faint: #58655d;
+  --border: #253029;
+  --hairline: #1c241f;
+  --input: #2d3a32;
+  --ring: #4ade80;
+
+  --primary: #4ade80;
+  --primary-foreground: #05200f;
+  --primary-soft: #102c1a;
+
+  --savings: #4ade80;
+  --savings-soft: #10281a;
+  --warning: #fbbf24;
+  --warning-soft: #2e2410;
+  --danger: #fb7185;
+  --danger-soft: #35151e;
+  --danger-foreground: #1a0a0e;
+  --info: #60a5fa;
+  --info-soft: #0f2036;
+  --neutral-soft: #1d2520;
+  --ember: #fb923c;
+  --ember-soft: #34200f;
+
+  --series-1: #34c76f;
+  --series-2: #e8893d;
+  --series-3: #7189ff;
+  --series-4: #ec5f8c;
+  --chart-grid: #1d2620;
+  --chart-axis: #748279;
+
+  --elev-1: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --elev-2: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 12px rgba(0, 0, 0, 0.25);
+  --elev-3: 0 2px 6px rgba(0, 0, 0, 0.35), 0 12px 28px rgba(0, 0, 0, 0.35);
+  --elev-4: 0 6px 16px rgba(0, 0, 0, 0.4), 0 20px 48px rgba(0, 0, 0, 0.45);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: var(--font-sans-stack);
+    font-feature-settings: "cv11", "ss01";
+  }
+  ::selection {
+    background: color-mix(in srgb, var(--primary) 25%, transparent);
+  }
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+}
+
+/* Code reads as typed: no "==" or "->" drawn as one glyph. */
+code,
+pre,
+kbd,
+.font-mono {
+  font-variant-ligatures: none;
+  font-feature-settings: "liga" 0, "calt" 0;
+}
+
+@utility tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+@utility no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Surface: the one "box" in the system, a fill plus a soft shadow, never an outline. */
+@utility surface {
+  background: var(--card);
+  border-radius: 14px;
+  box-shadow: var(--elev-2);
+}
+
+.recharts-wrapper *:focus {
+  outline: none;
+}
+
+/* An indeterminate progress bar (uploads whose size the browser does not report). */
+@keyframes tf-indeterminate {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(300%);
+  }
+}
