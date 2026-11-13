@@ -1,0 +1,30 @@
+# Copy to terraform.tfvars (git-ignored) and replace every placeholder.
+region      = "us-east-1"
+name_prefix = "acme-testforge-prod" # the objects bucket name derives from this: make it globally unique
+
+hostname        = "testforge.example.com"
+certificate_arn = "arn:aws:acm:us-east-1:123456789012:certificate/00000000-0000-0000-0000-000000000000" # same region, covering hostname
+route53_zone_id = "<ROUTE53_HOSTED_ZONE_ID>"                                                             # or remove and CNAME hostname to load_balancer_dns_name
+
+# Member notices (SES). New accounts start in the SES sandbox: request production access.
+mail_domain       = "testforge.example.com"
+mail_from_address = "no-reply@testforge.example.com"
+
+# The image tag pushed to the ecr_repositories output (git commit or release).
+image_tag = "0.1.0"
+
+# alarm_email            = "oncall@example.com"
+# metrics_allowed_cidrs  = ["203.0.113.10/32"] # your Prometheus egress address
+# queue_queued_threshold = 50
+# sandbox_desired_count  = 3
+# worker_concurrency     = 4
+
+# A GitHub Enterprise server instead of github.com:
+# github_api_url = "https://github.example.com/api/v3"
+
+# A self-hosted model provider inside the VPC (Ollama, vLLM) on a port other than 443:
+# extra_egress = [{ cidr = "10.56.0.0/16", port = 11434 }]
+
+# Extra non-secret settings (any name in apps/api/src/testforge/core/config.py).
+# api_extra_environment     = { RUN_WALL_S = "180" }
+# sandbox_extra_environment = { LOG_LEVEL = "DEBUG" }
