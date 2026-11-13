@@ -110,7 +110,7 @@ def _zip(entries: dict[str, bytes], *, symlink: str | None = None) -> bytes:
             zf.writestr(name, data)
         if symlink:
             info = zipfile.ZipInfo(symlink)
-            info.external_attr = (0o120777 << 16)
+            info.external_attr = 0o120777 << 16
             zf.writestr(info, "/etc/passwd")
     return buf.getvalue()
 
@@ -127,7 +127,9 @@ async def test_unsafe_archive_entries_are_skipped(ready: Stack) -> None:
         symlink="proj/link.py",
     )
     resp = await ready.client.post(
-        ready.p("/imports/zip"), params={"wait": 60}, files={"file": ("p.zip", data, "application/zip")}
+        ready.p("/imports/zip"),
+        params={"wait": 60},
+        files={"file": ("p.zip", data, "application/zip")},
     )
     imp = resp.json()
     assert imp["status"] == "ready", imp
@@ -145,7 +147,9 @@ async def test_zip_bomb_is_stopped_at_the_cap(stack: Stack) -> None:
     await stack.provider()
     big = {f"p/f{i}.py": (b"# " + b"x" * 60_000 + b"\n") for i in range(10)}
     resp = await stack.client.post(
-        stack.p("/imports/zip"), params={"wait": 60}, files={"file": ("b.zip", _zip(big), "application/zip")}
+        stack.p("/imports/zip"),
+        params={"wait": 60},
+        files={"file": ("b.zip", _zip(big), "application/zip")},
     )
     imp = resp.json()
     assert imp["status"] == "failed"

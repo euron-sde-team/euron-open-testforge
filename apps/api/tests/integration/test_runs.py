@@ -97,9 +97,16 @@ async def test_uploaded_suite_has_no_network(shop: Stack) -> None:
     """A3: an uploaded project's own tests cannot reach anything."""
     run = await _hostile_run(shop, "network")
     cases = {c["name"]: c for c in run["cases"]}  # type: ignore[union-attr]
-    for name in ("test_tcp_to_the_internet", "test_dns_lookup", "test_platform_services", "test_cloud_metadata_service"):
+    for name in (
+        "test_tcp_to_the_internet",
+        "test_dns_lookup",
+        "test_platform_services",
+        "test_cloud_metadata_service",
+    ):
         assert cases[name]["outcome"] == "failed", name
-        assert "unreachable" in cases[name]["message"] or "name resolution" in cases[name]["message"]
+        assert (
+            "unreachable" in cases[name]["message"] or "name resolution" in cases[name]["message"]
+        )
     assert cases["test_only_loopback_is_up"]["outcome"] == "passed"
 
 
@@ -130,8 +137,10 @@ async def test_limits_stop_the_run_and_are_named(
     """A5: the run is stopped, reported with the limit it crossed, never left running."""
     await shop.ok("PATCH", shop.p(), budget)
     probe = (HOSTILE / "limits_probe.py").read_text()
-    only = probe.split("\n\n\ndef ")[0] + "\n\n\ndef " + next(
-        part for part in probe.split("\n\n\ndef ") if part.startswith(test)
+    only = (
+        probe.split("\n\n\ndef ")[0]
+        + "\n\n\ndef "
+        + next(part for part in probe.split("\n\n\ndef ") if part.startswith(test))
     )
     await shop.import_zip("python-shop", extra={"tests/test_limits.py": only})
     run = await shop.run(kind="project", wait=120)
@@ -144,7 +153,7 @@ async def test_limits_stop_the_run_and_are_named(
         stopped = [c for c in run["cases"] if c["name"].endswith("test_sleep_forever")]
         assert stopped and stopped[0]["failure"]["kind"] == "limit"
     # The sandbox is fine afterwards.
-    await shop.ok("PATCH", shop.p(), {k: None for k in budget})
+    await shop.ok("PATCH", shop.p(), dict.fromkeys(budget))
     await shop.import_zip("python-shop")
     again = await shop.run(kind="project")
     assert again["status"] == "passed", again

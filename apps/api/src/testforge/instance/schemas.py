@@ -12,7 +12,6 @@ class PublicSettings(ApiModel):
 
     site_name: str
     allow_signup: bool
-    # Sign in with the configured OpenID Connect provider.
     # True on a fresh instance: the first sign-up creates the admin and an organization.
     needs_setup: bool = False
 

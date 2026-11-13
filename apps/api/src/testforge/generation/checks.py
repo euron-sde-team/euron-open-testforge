@@ -162,8 +162,12 @@ class _PyScan:
                 if self.helpers.get(name):
                     self.assertions.append(Assertion(sub.lineno, self._text(sub)))
                 if _is_raises(sub) and len(sub.args) >= 2:
-                    # pytest.raises(Error, fn, *args): the call form asserts too.
+                    # pytest.raises(Error, fn, *args): the call form asserts too, and it
+                    # calls fn.
                     self.assertions.append(Assertion(sub.lineno, self._text(sub)))
+                    fn = sub.args[1]
+                    if isinstance(fn, ast.Name) and fn.id in self.targets:
+                        self.calls_target = True
                 if (
                     isinstance(sub.func, ast.Attribute)
                     and sub.func.attr.startswith("assert")

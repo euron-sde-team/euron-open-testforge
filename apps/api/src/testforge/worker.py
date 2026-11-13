@@ -68,10 +68,15 @@ async def process(container: Container, job: Job, owner: str, settings: Settings
             await handle(container, session, job)
     except RetryLaterError as r:
         stop.set()
-        async with container.db.sessionmaker() as session:
-            await queue.retry_later(session, job.id, owner, r.delay_s, count=r.count)
-        log.info("job put back", extra={"job": str(job.id), "reason": r.reason})
-        return
+        if not r.count or job.attempts < settings.max_attempts:
+            async with container.db.sessionmaker() as session:
+                await queue.retry_later(session, job.id, owner, r.delay_s, count=r.count)
+            log.info("job put back", extra={"job": str(job.id), "reason": r.reason})
+            return
+        status, error = "failed", r.reason
+        await mark_failed(
+            container, job, f"{r.reason}. Try again, and tell an admin if it keeps happening"
+        )
     except Exception as exc:
         log.exception("job failed", extra={"job": str(job.id), "kind": job.kind})
         if job.attempts < settings.max_attempts:

@@ -94,11 +94,15 @@ async def test_review_and_regenerate(shop: Stack) -> None:
     first = tests[0]
     accepted = await shop.ok("PATCH", shop.p(f"/tests/{first['id']}"), {"status": "accepted"})
     assert accepted["status"] == "accepted"
-    again = await shop.ok("POST", shop.p(f"/tests/{first['id']}/regenerate"), status=202, params={"wait": 60})
+    again = await shop.ok(
+        "POST", shop.p(f"/tests/{first['id']}/regenerate"), status=202, params={"wait": 60}
+    )
     assert again["status"] == "done"
     old = await shop.ok("GET", shop.p(f"/tests/{first['id']}"))
     assert old["status"] == "discarded"
     bulk = await shop.ok(
-        "POST", shop.p("/tests/review"), {"ids": [t["id"] for t in tests[1:4]], "status": "discarded"}
+        "POST",
+        shop.p("/tests/review"),
+        {"ids": [t["id"] for t in tests[1:4]], "status": "discarded"},
     )
     assert bulk["changed"] == 3

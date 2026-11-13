@@ -364,7 +364,11 @@ class Stack:
         return dict(await self.ok("POST", self.p("/providers"), body, status=201, client=client))
 
     async def import_zip(
-        self, name: str = "python-shop", *, extra: dict[str, str] | None = None, wait: float = 60,
+        self,
+        name: str = "python-shop",
+        *,
+        extra: dict[str, str] | None = None,
+        wait: float = 60,
         client: httpx.AsyncClient | None = None,
     ) -> dict[str, Any]:
         c = client or self.client
@@ -376,20 +380,36 @@ class Stack:
         assert resp.status_code == 202, resp.text
         return dict(resp.json())
 
-    async def import_github(self, repo: str, ref: str | None = None, wait: float = 60) -> dict[str, Any]:
+    async def import_github(
+        self, repo: str, ref: str | None = None, wait: float = 60
+    ) -> dict[str, Any]:
         return dict(
             await self.ok(
-                "POST", self.p("/imports/github"), {"repo": repo, "ref": ref},
-                status=202, params={"wait": wait},
+                "POST",
+                self.p("/imports/github"),
+                {"repo": repo, "ref": ref},
+                status=202,
+                params={"wait": wait},
             )
         )
 
     async def generate(
-        self, *, wait: float = 120, client: httpx.AsyncClient | None = None,
-        status: int = 202, **body: Any,
+        self,
+        *,
+        wait: float = 120,
+        client: httpx.AsyncClient | None = None,
+        status: int = 202,
+        **body: Any,
     ) -> dict[str, Any]:
         return dict(
-            await self.ok("POST", self.p("/tests/generate"), body, status=status, params={"wait": wait}, client=client)
+            await self.ok(
+                "POST",
+                self.p("/tests/generate"),
+                body,
+                status=status,
+                params={"wait": wait},
+                client=client,
+            )
         )
 
     async def tests(self, **params: Any) -> list[dict[str, Any]]:
@@ -398,13 +418,26 @@ class Stack:
     async def accept_all(self, generation_id: str) -> list[dict[str, Any]]:
         tests = await self.tests(generation_id=generation_id)
         if tests:
-            await self.ok("POST", self.p("/tests/review"), {"ids": [t["id"] for t in tests], "status": "accepted"})
+            await self.ok(
+                "POST",
+                self.p("/tests/review"),
+                {"ids": [t["id"] for t in tests], "status": "accepted"},
+            )
         return tests
 
     async def run(
-        self, *, wait: float = 240, status: int = 202, client: httpx.AsyncClient | None = None, **body: Any
+        self,
+        *,
+        wait: float = 240,
+        status: int = 202,
+        client: httpx.AsyncClient | None = None,
+        **body: Any,
     ) -> dict[str, Any]:
-        return dict(await self.ok("POST", self.p("/runs"), body, status=status, params={"wait": wait}, client=client))
+        return dict(
+            await self.ok(
+                "POST", self.p("/runs"), body, status=status, params={"wait": wait}, client=client
+            )
+        )
 
     async def audit(self, **params: Any) -> list[dict[str, Any]]:
         return list((await self.ok("GET", self.p("/audit-logs"), params=params))["items"])

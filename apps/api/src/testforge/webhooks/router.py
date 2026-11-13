@@ -89,7 +89,7 @@ async def create_webhook(
     hook, secret = await service.create(
         container, session, p, body.name, body.url, list(body.events)
     )
-    return WebhookCreated.model_validate(hook).model_copy(update={"secret": secret})
+    return WebhookCreated(**WebhookOut.model_validate(hook).model_dump(), secret=secret)
 
 
 @router.delete(
