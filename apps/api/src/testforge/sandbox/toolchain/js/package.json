@@ -1,0 +1,11 @@
+{
+  "name": "testforge-sandbox-toolchain",
+  "private": true,
+  "description": "The JavaScript and TypeScript test toolchain every sandboxed run sees, read-only. Installed into the sandbox image at build time; runs never install anything (they have no network).",
+  "license": "MIT",
+  "type": "module",
+  "dependencies": {
+    "vitest": "3.2.4",
+    "@vitest/coverage-istanbul": "3.2.4"
+  }
+}

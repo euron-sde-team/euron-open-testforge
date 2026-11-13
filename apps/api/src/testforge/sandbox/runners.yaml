@@ -1,0 +1,77 @@
+# Test runners the sandbox can execute, one per test framework. Adding one: install its
+# toolchain in the sandbox image (infra/docker/sandbox.Dockerfile, under /opt/toolchain,
+# which every jail sees read-only) and add an entry here. Placeholders in arguments:
+#   {mem}  the run's memory limit in MB
+#
+# memory_mode decides how the memory limit is enforced (the CodeJudge design):
+#   address  RLIMIT_AS caps the address space (exact; Python)
+#   rss      the runtime's own heap flag ({mem}) caps it, the peak resident memory is
+#            checked after the run, and the sandbox container's memory limit is the
+#            backstop (Node and V8, which reserve far more address space than they use)
+# processes is RLIMIT_NPROC: processes and threads the run may have at once (it counts
+# the sandbox service's own threads too, since every jail maps to the service's uid).
+# env is the run's whole environment besides PATH, LANG, HOME and TMPDIR: nothing of the
+# service (no SANDBOX_SECRET) ever reaches a run.
+
+pytest:
+  name: pytest
+  languages: [python]
+  run:
+    - /opt/toolchain/python/bin/python
+    - -m
+    - pytest
+    - -c
+    - /box/.testforge/pytest.ini
+    - --rootdir=/box
+    - -p
+    - testforge_pytest
+    - -p
+    - no:cacheprovider
+    - --import-mode=importlib
+    - -q
+    - --color=no
+    - -o
+    - console_output_style=classic
+  coverage:
+    - --cov=/box
+    - --cov-config=/box/.testforge/coveragerc
+    - --cov-report=json:/box/.testforge/coverage.json
+    - --cov-report=
+  coverage_file: coverage.json
+  coverage_tool: coverage.py
+  env:
+    - PYTHONPATH=/opt/toolchain/plugins:/box:/box/src
+    - PYTHONDONTWRITEBYTECODE=1
+    - PYTHONHASHSEED=0
+    - COVERAGE_FILE=/tmp/.coverage
+    - TESTFORGE_OUT=/box/.testforge
+  memory_mode: address
+  # The interpreter, pytest and coverage need address space before any test allocates.
+  memory_overhead_mb: 128
+  processes: 128
+
+vitest:
+  name: Vitest
+  languages: [javascript, typescript]
+  run:
+    - /usr/bin/node
+    - /opt/toolchain/js/node_modules/vitest/vitest.mjs
+    - run
+    - --config
+    - /box/.testforge/vitest.config.mjs
+  coverage:
+    - --coverage.enabled=true
+  coverage_file: coverage/coverage-final.json
+  coverage_tool: istanbul
+  env:
+    # no-proc.cjs: process.memoryUsage() without /proc (the sandbox has none).
+    - NODE_OPTIONS=--max-old-space-size={mem} --require /opt/toolchain/js/no-proc.cjs
+    - TESTFORGE_OUT=/box/.testforge
+    - TESTFORGE_ROOT=/box
+    - CI=1
+    - NO_COLOR=1
+    - FORCE_COLOR=0
+  memory_mode: rss
+  # Node, Vitest and esbuild's own footprint counted on top of the heap.
+  memory_overhead_mb: 256
+  processes: 512

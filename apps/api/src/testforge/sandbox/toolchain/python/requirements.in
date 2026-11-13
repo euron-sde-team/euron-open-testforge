@@ -1,0 +1,13 @@
+# The Python test toolchain every sandboxed run sees, read-only. Installed into the
+# sandbox image at build time; runs never install anything (they have no network).
+# Libraries a typical service under test imports are included so its tests can run:
+# FastAPI and Flask apps are exercised in process (TestClient, test_client), never over
+# a network.
+pytest
+pytest-cov
+coverage
+fastapi
+httpx
+pydantic
+flask
+requests
