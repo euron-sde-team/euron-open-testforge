@@ -301,6 +301,11 @@ async def record(
             if case["failure"].get("limit"):
                 failure["kind"] = "limit"
                 failure["limit"] = case["failure"]["limit"]
+                failure["explanation"] = (
+                    f"{case.get('name') or 'This test'} was running when the sandbox stopped "
+                    f"the run at its {case['failure']['limit'].replace('_', ' ')} limit: "
+                    f"{result.limit_detail or 'the limit was crossed'}"
+                )
         session.add(
             TestCaseResult(
                 run_id=run.id,

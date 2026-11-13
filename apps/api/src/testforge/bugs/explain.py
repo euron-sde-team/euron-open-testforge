@@ -28,6 +28,14 @@ OPERATOR_WORDS = {
     "toEqual": "to equal",
     "toStrictEqual": "to equal",
 }
+NETWORK_MARKERS = (
+    "Network is unreachable",
+    "Temporary failure in name resolution",
+    "Name or service not known",
+    "ENETUNREACH",
+    "EAI_AGAIN",
+    "ENOTFOUND",
+)
 RAISES = re.compile(r"DID NOT RAISE <class '([\w.]+)'>")
 JS_THROW = re.compile(r"expected \[Function.*?\] to throw", re.IGNORECASE)
 
@@ -114,6 +122,21 @@ def explain(case: dict[str, Any], source_line: str | None = None) -> dict[str, A
         out["explanation"] = f"{name} failed{location}: {message.splitlines()[0][:400]}"
         return out
     first = message.splitlines()[0][:400] if message else "an error"
+    if any(marker in message for marker in NETWORK_MARKERS):
+        out["kind"] = "refused"
+        out["explanation"] = (
+            f"{name} tried to open a network connection{location} and the sandbox refused it: "
+            f"{first}. Runs have no network; a test that needs a service should use a fake or "
+            "drive the app in process."
+        )
+        return out
+    if "No such file or directory" in message and "/box/" not in message.split("No such file")[-1]:
+        out["kind"] = "refused"
+        out["explanation"] = (
+            f"{name} tried to read a file outside its workspace{location}, which the sandbox "
+            f"does not have: {first}. A run sees only its own project's files."
+        )
+        return out
     out["explanation"] = (
         f"{name} stopped with an error{location} before it could check anything: {first}. "
         "This is the code (or the test's setup) raising, not an assertion failing."

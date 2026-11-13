@@ -80,3 +80,37 @@ def test_missing_exception_and_errors() -> None:
     assert plain["kind"] == "assertion"
     empty = explain({"name": "t"})
     assert empty["kind"] == "error"
+
+
+def test_refused_network_and_file_access_are_named() -> None:
+    net = explain(
+        {"name": "t", "failure": {"message": "OSError: [Errno 101] Network is unreachable"}}
+    )
+    assert net["kind"] == "refused" and "refused it" in net["explanation"]
+    dns = explain(
+        {
+            "name": "t",
+            "failure": {
+                "message": "socket.gaierror: [Errno -3] Temporary failure in name resolution"
+            },
+        }
+    )
+    assert dns["kind"] == "refused"
+    host = explain(
+        {
+            "name": "t",
+            "failure": {
+                "message": "FileNotFoundError: [Errno 2] No such file or directory: '/etc/passwd'"
+            },
+        }
+    )
+    assert host["kind"] == "refused" and "outside its workspace" in host["explanation"]
+    own = explain(
+        {
+            "name": "t",
+            "failure": {
+                "message": "FileNotFoundError: [Errno 2] No such file or directory: '/box/data.csv'"
+            },
+        }
+    )
+    assert own["kind"] == "error"
