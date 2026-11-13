@@ -1,0 +1,113 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="540" viewBox="0 0 1200 540" role="img" aria-labelledby="t d">
+  <title id="t">From import to explained failure</title>
+  <desc id="d">A project is imported from a ZIP or a GitHub commit archive, analyzed statically, and tests are generated from schema-aware prompts. Every test goes through the assertion check: refused tests are kept only as a name and a reason; accepted tests are reviewed by a person. Accepted tests and the project's own suite run in the sandbox with no network and fixed limits. The run's results, measured coverage projected onto code units, and failures explained from the same run's captured values come back to the project.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 Z" fill="#334155"/>
+    </marker>
+    <marker id="arrow-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 Z" fill="#b91c1c"/>
+    </marker>
+  </defs>
+  <rect width="1200" height="540" rx="16" fill="#f8fafc"/>
+  <g font-family="Inter, -apple-system, Segoe UI, Helvetica, Arial, sans-serif" fill="#0f172a">
+    <text x="40" y="48" font-size="13" font-weight="650" fill="#475569">WORKER: NOTHING EXECUTES HERE</text>
+
+    <!-- Row 1 -->
+    <rect x="40" y="66" width="200" height="120" rx="12" fill="#ffffff" stroke="#cbd5e1"/>
+    <text x="60" y="94" font-size="12" font-weight="650" fill="#059669">1</text>
+    <text x="78" y="94" font-size="15" font-weight="650">Import</text>
+    <text x="60" y="118" font-size="12" fill="#475569">ZIP upload or GitHub</text>
+    <text x="60" y="136" font-size="12" fill="#475569">tarball of one commit,</text>
+    <text x="60" y="154" font-size="12" fill="#475569">unpacked in memory,</text>
+    <text x="60" y="172" font-size="12" fill="#475569">sizes and links checked</text>
+
+    <rect x="270" y="66" width="200" height="120" rx="12" fill="#ffffff" stroke="#cbd5e1"/>
+    <text x="290" y="94" font-size="12" font-weight="650" fill="#059669">2</text>
+    <text x="308" y="94" font-size="15" font-weight="650">Analyze</text>
+    <text x="290" y="118" font-size="12" fill="#475569">ast and a masking lexer:</text>
+    <text x="290" y="136" font-size="12" fill="#475569">functions, classes, routes,</text>
+    <text x="290" y="154" font-size="12" fill="#475569">examples, raise conditions,</text>
+    <text x="290" y="172" font-size="12" fill="#475569">untested units</text>
+
+    <rect x="500" y="66" width="200" height="120" rx="12" fill="#ffffff" stroke="#cbd5e1"/>
+    <text x="520" y="94" font-size="12" font-weight="650" fill="#059669">3</text>
+    <text x="538" y="94" font-size="15" font-weight="650">Generate</text>
+    <text x="520" y="118" font-size="12" fill="#475569">schema-aware prompt from</text>
+    <text x="520" y="136" font-size="12" fill="#475569">the real units, any model</text>
+    <text x="520" y="154" font-size="12" fill="#475569">or the mock; OpenAPI ops</text>
+    <text x="520" y="172" font-size="12" fill="#475569">for API tests</text>
+
+    <rect x="730" y="66" width="200" height="120" rx="12" fill="#d1fae5"/>
+    <text x="750" y="94" font-size="12" font-weight="650" fill="#047857">4</text>
+    <text x="768" y="94" font-size="15" font-weight="650">Assertion check</text>
+    <text x="750" y="118" font-size="12" fill="#065f46">a real assertion that can</text>
+    <text x="750" y="136" font-size="12" fill="#065f46">run and calls the code;</text>
+    <text x="750" y="154" font-size="12" fill="#065f46">no placeholders, nothing</text>
+    <text x="750" y="172" font-size="12" fill="#065f46">after a return</text>
+
+    <rect x="960" y="66" width="200" height="120" rx="12" fill="#ffffff" stroke="#cbd5e1"/>
+    <text x="980" y="94" font-size="12" font-weight="650" fill="#059669">5</text>
+    <text x="998" y="94" font-size="15" font-weight="650">Accept</text>
+    <text x="980" y="118" font-size="12" fill="#475569">proposed tests with their</text>
+    <text x="980" y="136" font-size="12" fill="#475569">assertions and a plain</text>
+    <text x="980" y="154" font-size="12" fill="#475569">description; a person</text>
+    <text x="980" y="172" font-size="12" fill="#475569">accepts or discards</text>
+
+    <line x1="240" y1="126" x2="268" y2="126" stroke="#334155" stroke-width="1.6" marker-end="url(#arrow)"/>
+    <line x1="470" y1="126" x2="498" y2="126" stroke="#334155" stroke-width="1.6" marker-end="url(#arrow)"/>
+    <line x1="700" y1="126" x2="728" y2="126" stroke="#334155" stroke-width="1.6" marker-end="url(#arrow)"/>
+    <line x1="930" y1="126" x2="958" y2="126" stroke="#334155" stroke-width="1.6" marker-end="url(#arrow)"/>
+
+    <!-- Refused branch -->
+    <line x1="830" y1="186" x2="830" y2="214" stroke="#b91c1c" stroke-width="1.6" marker-end="url(#arrow-red)"/>
+    <rect x="700" y="216" width="260" height="52" rx="10" fill="#fee2e2"/>
+    <text x="716" y="238" font-size="13" font-weight="650" fill="#991b1b">Refused</text>
+    <text x="716" y="256" font-size="12" fill="#7f1d1d">kept as name and reason, never shown or run</text>
+
+    <!-- Sandbox band -->
+    <rect x="40" y="300" width="1120" height="210" rx="16" fill="#ecfdf5"/>
+    <text x="340" y="326" font-size="13" font-weight="650" fill="#065f46">SANDBOX AND BACK: THE ONLY PLACE CODE RUNS</text>
+
+    <path d="M1060 186 L1060 290 Q1060 300 1050 300 L170 300 Q150 300 150 318 L150 340" fill="none" stroke="#334155" stroke-width="1.6" marker-end="url(#arrow)"/>
+    <text x="760" y="292" font-size="11" fill="#475569">accepted tests, plus the project's own suite</text>
+
+    <rect x="60" y="342" width="250" height="148" rx="12" fill="#065f46"/>
+    <text x="80" y="370" font-size="12" font-weight="650" fill="#a7f3d0">6</text>
+    <text x="98" y="370" font-size="15" font-weight="650" fill="#ecfdf5">Run in the sandbox</text>
+    <text x="80" y="394" font-size="12" fill="#d1fae5">nsjail, pytest or Vitest,</text>
+    <text x="80" y="412" font-size="12" fill="#d1fae5">no network, no credentials,</text>
+    <text x="80" y="430" font-size="12" fill="#d1fae5">CPU, memory, output and</text>
+    <text x="80" y="448" font-size="12" fill="#d1fae5">wall clock limits; a crossed</text>
+    <text x="80" y="466" font-size="12" fill="#d1fae5">limit is named</text>
+
+    <rect x="340" y="342" width="250" height="148" rx="12" fill="#ffffff"/>
+    <text x="360" y="370" font-size="12" font-weight="650" fill="#059669">7</text>
+    <text x="378" y="370" font-size="15" font-weight="650">Results</text>
+    <text x="360" y="394" font-size="12" fill="#475569">every test case from the</text>
+    <text x="360" y="412" font-size="12" fill="#475569">runner's report, or from its</text>
+    <text x="360" y="430" font-size="12" fill="#475569">event log when a limit</text>
+    <text x="360" y="448" font-size="12" fill="#475569">stopped the run</text>
+
+    <rect x="620" y="342" width="250" height="148" rx="12" fill="#ffffff"/>
+    <text x="640" y="370" font-size="12" font-weight="650" fill="#059669">8</text>
+    <text x="658" y="370" font-size="15" font-weight="650">Coverage</text>
+    <text x="640" y="394" font-size="12" fill="#475569">coverage.py or Istanbul,</text>
+    <text x="640" y="412" font-size="12" fill="#475569">measured in the run, per file;</text>
+    <text x="640" y="430" font-size="12" fill="#475569">projected onto each unit's</text>
+    <text x="640" y="448" font-size="12" fill="#475569">own statements</text>
+
+    <rect x="900" y="342" width="240" height="148" rx="12" fill="#ffffff"/>
+    <text x="920" y="370" font-size="12" font-weight="650" fill="#059669">9</text>
+    <text x="938" y="370" font-size="15" font-weight="650">Failure explained</text>
+    <text x="920" y="394" font-size="12" fill="#475569">operator, actual and expected</text>
+    <text x="920" y="412" font-size="12" fill="#475569">captured when the assertion</text>
+    <text x="920" y="430" font-size="12" fill="#475569">failed; no second run</text>
+    <text x="920" y="448" font-size="12" fill="#475569">expected [33.34, ...],</text>
+    <text x="920" y="466" font-size="12" fill="#475569">got [33.33, ...]</text>
+
+    <line x1="310" y1="416" x2="338" y2="416" stroke="#334155" stroke-width="1.6" marker-end="url(#arrow)"/>
+    <line x1="590" y1="416" x2="618" y2="416" stroke="#334155" stroke-width="1.6" marker-end="url(#arrow)"/>
+    <line x1="870" y1="416" x2="898" y2="416" stroke="#334155" stroke-width="1.6" marker-end="url(#arrow)"/>
+  </g>
+</svg>

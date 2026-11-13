@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="560" viewBox="0 0 1200 560" role="img" aria-labelledby="t d">
+  <title id="t">Sandbox layers</title>
+  <desc id="d">The host runs the sandbox container: every capability dropped, no new privileges, read only root, Docker's default seccomp profile plus the namespace calls, a network shared only with the worker, and SANDBOX_SECRET as its only credential. Inside, the sandbox service verifies signed requests and starts one nsjail per run: new user, PID, network, mount, IPC and UTS namespaces, uid 65534, no network, no proc, a syscall filter, rlimits for CPU, address space, processes, output and open files, a wall clock limit, read only system directories and toolchain, and the run's own workspace. The service's code, the secret and other runs stay outside every jail.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 Z" fill="#047857"/>
+    </marker>
+  </defs>
+  <rect width="1200" height="560" rx="16" fill="#f8fafc"/>
+  <g font-family="Inter, -apple-system, Segoe UI, Helvetica, Arial, sans-serif" fill="#0f172a">
+    <rect x="30" y="30" width="1140" height="500" rx="16" fill="#e2e8f0"/>
+    <text x="56" y="64" font-size="16" font-weight="650">Host (on AWS: EC2 hosts that run only sandbox tasks, IMDSv2 hop limit 1, task metadata blocked)</text>
+
+    <rect x="56" y="84" width="160" height="96" rx="12" fill="#ffffff" stroke="#cbd5e1"/>
+    <text x="76" y="112" font-size="15" font-weight="650">worker</text>
+    <text x="76" y="134" font-size="12" fill="#475569">the only caller</text>
+    <text x="76" y="152" font-size="12" fill="#475569">signs each request</text>
+    <text x="76" y="170" font-size="12" fill="#475569">(HMAC, 5 min skew)</text>
+    <line x1="216" y1="132" x2="262" y2="132" stroke="#047857" stroke-width="2" marker-end="url(#arrow)"/>
+
+    <rect x="264" y="84" width="880" height="420" rx="14" fill="#d1fae5"/>
+    <text x="288" y="114" font-size="16" font-weight="650">Sandbox container: uid 10001, unprivileged</text>
+    <g font-size="13" fill="#065f46" xml:space="preserve">
+      <text x="288" y="138">cap_drop ALL  ·  no-new-privileges  ·  read-only root  ·  seccomp: Docker default plus namespace calls</text>
+      <text x="288" y="158">network: shared with the worker only, no egress  ·  secret: SANDBOX_SECRET  ·  pids, memory and CPU limits</text>
+    </g>
+
+    <rect x="288" y="180" width="300" height="300" rx="12" fill="#f0fdf4"/>
+    <text x="308" y="210" font-size="15" font-weight="650">Outside every jail</text>
+    <g font-size="13" fill="#334155">
+      <text x="308" y="238">/opt/venv: the sandbox service</text>
+      <text x="308" y="260">SANDBOX_SECRET in its environment</text>
+      <text x="308" y="282">request verification, one slot</text>
+      <text x="308" y="304">stdout and stderr files</text>
+      <text x="308" y="326">wait4: CPU time, peak memory</text>
+      <text x="308" y="348">limit classification, in order:</text>
+      <text x="324" y="370">output, wall clock, CPU,</text>
+      <text x="324" y="390">memory, processes</text>
+      <text x="308" y="414">reading results with O_NOFOLLOW</text>
+      <text x="308" y="436">other runs' workspaces</text>
+      <text x="308" y="458">oom_score_adj 1000 for the run</text>
+    </g>
+
+    <rect x="612" y="180" width="508" height="300" rx="12" fill="#065f46"/>
+    <text x="636" y="210" font-size="15" font-weight="650" fill="#ecfdf5">nsjail, one per run: pytest or Vitest</text>
+    <g font-size="13" fill="#d1fae5">
+      <text x="636" y="238">namespaces: user (uid 65534), PID, network, mount, IPC, UTS</text>
+      <text x="636" y="260">network: no interface but loopback, no route, no DNS</text>
+      <text x="636" y="282">no /proc (Node gets the no-proc.cjs shim), no /sys</text>
+      <text x="636" y="304">environment built from scratch, nothing inherited</text>
+      <text x="636" y="326">syscall filter: no unshare, mount, ptrace, bpf, io_uring</text>
+      <text x="636" y="348">rlimits: CPU, address space, processes, file size,</text>
+      <text x="636" y="368">open files, stack, no core; wall clock; one CPU</text>
+    </g>
+    <rect x="636" y="384" width="230" height="80" rx="10" fill="#047857"/>
+    <text x="652" y="406" font-size="13" font-weight="650" fill="#ecfdf5">read-only</text>
+    <text x="652" y="426" font-size="12" fill="#d1fae5">/usr /lib /bin, /etc/hosts</text>
+    <text x="652" y="444" font-size="12" fill="#d1fae5">/opt/toolchain (pytest,</text>
+    <text x="652" y="460" font-size="12" fill="#d1fae5">coverage, Vitest, plugins)</text>
+    <rect x="876" y="384" width="220" height="80" rx="10" fill="#10b981"/>
+    <text x="892" y="406" font-size="13" font-weight="650" fill="#022c22">writable, this run only</text>
+    <text x="892" y="426" font-size="12" fill="#064e3b">/box: the project, the tests,</text>
+    <text x="892" y="444" font-size="12" fill="#064e3b">.testforge/ reports, coverage</text>
+    <text x="892" y="460" font-size="12" fill="#064e3b">a private /tmp (256 MB)</text>
+  </g>
+</svg>

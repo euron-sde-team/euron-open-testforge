@@ -1,0 +1,120 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="660" viewBox="0 0 1200 660" role="img" aria-labelledby="t d">
+  <title id="t">TestForge architecture</title>
+  <desc id="d">Browsers use the Next.js web app, which proxies to the FastAPI API; scripts and CI use the API directly with the SDK or CLI. The API, the worker and the scheduler share PostgreSQL (records and the job queue), optional Redis (rate limits, the file index cache, wake-ups) and S3 with KMS (uploads, snapshots, reports, sealed secrets). The worker calls model providers or the mock, reads GitHub, and sends signed run requests to the sandbox service, which sits alone on its own network with the worker and runs every test in nsjail with no network.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 Z" fill="#334155"/>
+    </marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 Z" fill="#047857"/>
+    </marker>
+  </defs>
+  <rect width="1200" height="660" rx="16" fill="#f8fafc"/>
+  <g font-family="Inter, -apple-system, Segoe UI, Helvetica, Arial, sans-serif" fill="#0f172a">
+
+    <!-- Clients -->
+    <rect x="30" y="70" width="160" height="70" rx="12" fill="#ffffff" stroke="#cbd5e1"/>
+    <text x="110" y="100" font-size="15" font-weight="650" text-anchor="middle">Browser</text>
+    <text x="110" y="122" font-size="12" fill="#475569" text-anchor="middle">people</text>
+
+    <rect x="30" y="230" width="160" height="70" rx="12" fill="#ffffff" stroke="#cbd5e1"/>
+    <text x="110" y="260" font-size="15" font-weight="650" text-anchor="middle">SDK and CLI</text>
+    <text x="110" y="282" font-size="12" fill="#475569" text-anchor="middle">scripts, CI (API keys)</text>
+
+    <rect x="230" y="70" width="190" height="70" rx="12" fill="#d1fae5"/>
+    <text x="325" y="100" font-size="15" font-weight="650" text-anchor="middle">web</text>
+    <text x="325" y="122" font-size="12" fill="#065f46" text-anchor="middle">Next.js, proxies /api</text>
+
+    <line x1="190" y1="105" x2="228" y2="105" stroke="#334155" stroke-width="1.6" marker-end="url(#arrow)"/>
+
+    <!-- Control plane -->
+    <rect x="460" y="40" width="300" height="410" rx="16" fill="#ecfdf5"/>
+    <text x="480" y="68" font-size="13" font-weight="650" fill="#065f46">Control plane (server image)</text>
+
+    <rect x="485" y="84" width="250" height="78" rx="12" fill="#ffffff"/>
+    <text x="505" y="112" font-size="15" font-weight="650">api</text>
+    <text x="505" y="134" font-size="12" fill="#475569">FastAPI /api/v1: records, roles,</text>
+    <text x="505" y="151" font-size="12" fill="#475569">queues jobs, never runs code</text>
+
+    <rect x="485" y="182" width="250" height="140" rx="12" fill="#ffffff"/>
+    <text x="505" y="210" font-size="15" font-weight="650">worker</text>
+    <text x="505" y="232" font-size="12" fill="#475569">claims jobs from the Postgres queue</text>
+    <text x="505" y="252" font-size="12" fill="#475569">import: archive, static analysis</text>
+    <text x="505" y="272" font-size="12" fill="#475569">generate: prompt, model, check</text>
+    <text x="505" y="292" font-size="12" fill="#475569">run: sandbox call, cases,</text>
+    <text x="505" y="310" font-size="12" fill="#475569">coverage, explanations</text>
+
+    <rect x="485" y="342" width="250" height="90" rx="12" fill="#ffffff"/>
+    <text x="505" y="370" font-size="15" font-weight="650">scheduler</text>
+    <text x="505" y="392" font-size="12" fill="#475569">lease reaper, queue gauges,</text>
+    <text x="505" y="410" font-size="12" fill="#475569">webhook deliveries, retention</text>
+
+    <line x1="420" y1="105" x2="483" y2="115" stroke="#334155" stroke-width="1.6" marker-end="url(#arrow)"/>
+    <path d="M190 265 C 320 265, 380 140, 483 135" fill="none" stroke="#334155" stroke-width="1.6" marker-end="url(#arrow)"/>
+
+    <!-- External services -->
+    <rect x="800" y="40" width="175" height="80" rx="12" fill="#ffffff" stroke="#94a3b8" stroke-dasharray="5 4"/>
+    <text x="887" y="70" font-size="14" font-weight="650" text-anchor="middle">Model providers</text>
+    <text x="887" y="90" font-size="12" fill="#475569" text-anchor="middle">OpenAI, Anthropic, Gemini,</text>
+    <text x="887" y="107" font-size="12" fill="#475569" text-anchor="middle">Ollama, or the mock</text>
+
+    <rect x="995" y="40" width="175" height="80" rx="12" fill="#ffffff" stroke="#94a3b8" stroke-dasharray="5 4"/>
+    <text x="1082" y="70" font-size="14" font-weight="650" text-anchor="middle">GitHub</text>
+    <text x="1082" y="90" font-size="12" fill="#475569" text-anchor="middle">tarball of one commit,</text>
+    <text x="1082" y="107" font-size="12" fill="#475569" text-anchor="middle">pull requests, webhooks</text>
+
+    <path d="M735 192 C 790 170, 850 150, 870 122" fill="none" stroke="#334155" stroke-width="1.6" marker-end="url(#arrow)"/>
+    <path d="M735 200 C 790 140, 1000 150, 1070 122" fill="none" stroke="#334155" stroke-width="1.6" marker-end="url(#arrow)"/>
+
+    <!-- Sandbox network -->
+    <rect x="800" y="170" width="370" height="280" rx="16" fill="#fffbeb" stroke="#d97706" stroke-dasharray="6 5"/>
+    <text x="820" y="196" font-size="13" font-weight="650" fill="#92400e">sandbox network: internal, worker only</text>
+    <rect x="830" y="222" width="310" height="200" rx="14" fill="#065f46"/>
+    <text x="852" y="252" font-size="15" font-weight="650" fill="#ecfdf5">sandbox (sandbox image)</text>
+    <g font-size="12" fill="#d1fae5">
+      <text x="852" y="276">unprivileged, cap_drop ALL, read-only root</text>
+      <text x="852" y="296">holds SANDBOX_SECRET only</text>
+      <text x="852" y="316">one run at a time per process</text>
+    </g>
+    <rect x="852" y="332" width="266" height="72" rx="10" fill="#047857"/>
+    <text x="870" y="356" font-size="13" font-weight="650" fill="#ecfdf5">nsjail per run: pytest or Vitest</text>
+    <text x="870" y="376" font-size="12" fill="#d1fae5">no network, no /proc, rlimits,</text>
+    <text x="870" y="394" font-size="12" fill="#d1fae5">its own workspace at /box</text>
+
+    <line x1="735" y1="270" x2="828" y2="290" stroke="#047857" stroke-width="2" marker-end="url(#arrow-green)"/>
+    <text x="742" y="246" font-size="11" fill="#047857" font-weight="650">POST /v1/runs</text>
+    <text x="742" y="260" font-size="11" fill="#047857">HMAC signed</text>
+
+    <!-- Data bus -->
+    <line x1="610" y1="450" x2="610" y2="490" stroke="#334155" stroke-width="1.6"/>
+    <line x1="215" y1="490" x2="1095" y2="490" stroke="#334155" stroke-width="1.6"/>
+    <line x1="315" y1="490" x2="315" y2="518" stroke="#334155" stroke-width="1.6" marker-end="url(#arrow)"/>
+    <line x1="610" y1="490" x2="610" y2="518" stroke="#334155" stroke-width="1.6" marker-end="url(#arrow)"/>
+    <line x1="890" y1="490" x2="890" y2="518" stroke="#334155" stroke-width="1.6" marker-end="url(#arrow)"/>
+    <line x1="1095" y1="490" x2="1095" y2="518" stroke="#334155" stroke-width="1.6" marker-end="url(#arrow)"/>
+    <text x="625" y="478" font-size="11" fill="#475569">api, worker, scheduler (never the sandbox)</text>
+
+    <rect x="195" y="520" width="240" height="110" rx="12" fill="#e2e8f0"/>
+    <text x="315" y="550" font-size="15" font-weight="650" text-anchor="middle">PostgreSQL 16</text>
+    <text x="315" y="574" font-size="12" fill="#475569" text-anchor="middle">projects, imports, code units,</text>
+    <text x="315" y="592" font-size="12" fill="#475569" text-anchor="middle">tests, runs, coverage, audit log,</text>
+    <text x="315" y="610" font-size="12" fill="#475569" text-anchor="middle">and the job queue</text>
+
+    <rect x="490" y="520" width="240" height="110" rx="12" fill="#e2e8f0"/>
+    <text x="610" y="550" font-size="15" font-weight="650" text-anchor="middle">Redis 7 (optional)</text>
+    <text x="610" y="574" font-size="12" fill="#475569" text-anchor="middle">rate limits, file index cache,</text>
+    <text x="610" y="592" font-size="12" fill="#475569" text-anchor="middle">queue wake-ups</text>
+    <text x="610" y="610" font-size="12" fill="#475569" text-anchor="middle">in process without it</text>
+
+    <rect x="785" y="520" width="210" height="110" rx="12" fill="#e2e8f0"/>
+    <text x="890" y="550" font-size="15" font-weight="650" text-anchor="middle">S3 and KMS</text>
+    <text x="890" y="574" font-size="12" fill="#475569" text-anchor="middle">uploads, snapshots, reports;</text>
+    <text x="890" y="592" font-size="12" fill="#475569" text-anchor="middle">sealed keys and tokens</text>
+    <text x="890" y="610" font-size="12" fill="#475569" text-anchor="middle">(Floci locally)</text>
+
+    <rect x="1020" y="520" width="150" height="110" rx="12" fill="#e2e8f0"/>
+    <text x="1095" y="550" font-size="15" font-weight="650" text-anchor="middle">Mail</text>
+    <text x="1095" y="574" font-size="12" fill="#475569" text-anchor="middle">Mailpit locally,</text>
+    <text x="1095" y="592" font-size="12" fill="#475569" text-anchor="middle">SES on AWS</text>
+  </g>
+</svg>
